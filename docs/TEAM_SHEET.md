@@ -20,14 +20,14 @@ Owned phases:
 - Phase 6: Evidence Brief
 
 Owned files:
-- `app/page.tsx`
-- `components/landing-page.tsx`
-- `app/case/demo-child-a/page.tsx`
-- `components/dashboard-shell.tsx`
-- `app/report/demo-child-a/page.tsx`
-- `components/report-page.tsx`
-- `app/globals.css`
-- `tailwind.config.ts`
+- `frontend/app/page.tsx`
+- `frontend/components/landing-page.tsx`
+- `frontend/app/case/demo-child-a/page.tsx`
+- `frontend/components/dashboard-shell.tsx`
+- `frontend/app/report/demo-child-a/page.tsx`
+- `frontend/components/report-page.tsx`
+- `frontend/app/globals.css`
+- `frontend/tailwind.config.ts`
 
 Responsibilities:
 - premium visual quality
@@ -45,10 +45,10 @@ Owned phases:
 - Phase 7: AI / RAG Enhancement
 
 Owned files:
-- `lib/types.ts`
-- `lib/view-types.ts`
-- `lib/data.ts`
-- `lib/logic.ts`
+- `frontend/lib/types.ts`
+- `frontend/lib/view-types.ts`
+- `frontend/lib/data.ts`
+- `frontend/lib/logic.ts`
 
 Responsibilities:
 - schema definition
@@ -67,12 +67,12 @@ Owned phases:
 - Phase 9: Repo and Demo Packaging
 
 Owned files:
-- `app/api/cases/[caseId]/route.ts`
-- `app/api/fragments/route.ts`
-- `app/api/claims/route.ts`
-- `app/api/report/[caseId]/route.ts`
-- `app/layout.tsx`
-- `package.json`
+- `frontend/app/api/cases/[caseId]/route.ts`
+- `frontend/app/api/fragments/route.ts`
+- `frontend/app/api/claims/route.ts`
+- `frontend/app/api/report/[caseId]/route.ts`
+- `frontend/app/layout.tsx`
+- `frontend/package.json`
 - `README.md`
 
 Responsibilities:
@@ -87,14 +87,14 @@ Responsibilities:
 Before coding starts, all three people agree on:
 - the one-sentence product definition
 - the single demo path
-- the exact fields in `CaseRecord`, `EvidenceFragment`, and `Claim`
+- the exact fields in `frontend/lib/types.ts` for `CaseRecord`, `EvidenceFragment`, and `Claim`
 - what is explicitly out of scope
 
 No code changes happen during Phase 0.
 
 ## Freeze Rules
 
-- After Phase 1, `lib/types.ts` is frozen.
+- After Phase 1, `frontend/lib/types.ts` is frozen.
 - After Phase 2, the core data shape is frozen.
 - Frontend builds against the frozen shape.
 - Backend builds APIs against the frozen shape.
