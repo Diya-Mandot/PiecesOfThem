@@ -1,0 +1,591 @@
+[
+  {
+    "id": "PSS-001",
+    "kind": "public-source",
+    "label": "Every Family Has a Story",
+    "sourceUrls": [
+      "https://curesanfilippofoundation.org/meet-the-families/every-family-has-a-story/"
+    ],
+    "platform": "Cure Sanfilippo Foundation",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "nonprofit-family-story",
+    "authorRole": "family-foundation",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "low",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Best used as a discovery hub for named family stories and linked campaigns; likely contains repeated advocacy language plus parent-authored milestones."
+  },
+  {
+    "id": "PSS-002",
+    "kind": "public-source",
+    "label": "Team Sanfilippo community stories hub",
+    "sourceUrls": [
+      "https://teamsanfilippo.org/"
+    ],
+    "platform": "Team Sanfilippo",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "nonprofit-family-story",
+    "authorRole": "family-foundation",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "speech-language",
+      "behavior",
+      "sleep"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Useful for collecting family narratives with disease progression and treatment advocacy references; likely needs page-level parsing rather than a single scrape."
+  },
+  {
+    "id": "PSS-003",
+    "kind": "public-source",
+    "label": "Lindquist's Story",
+    "sourceUrls": [
+      "https://teamsanfilippo.org/community-news/lindquists-story/"
+    ],
+    "platform": "Team Sanfilippo",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "nonprofit-family-story",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "behavior",
+      "sleep",
+      "seizures",
+      "care-burden"
+    ],
+    "temporalSignal": "retrospective",
+    "extractionValue": "high",
+    "scrapeDifficulty": "low",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Rich long-form narrative with progression clues and event chronology; a good benchmark page for extraction prompts and milestone tagging."
+  },
+  {
+    "id": "PSS-004",
+    "kind": "public-source",
+    "label": "Saving Liv columnist archive",
+    "sourceUrls": [
+      "https://sanfilipponews.com/saving-liv-erin-stoop/"
+    ],
+    "platform": "Sanfilippo News",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "caregiver-column",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "speech-language",
+      "memory-recognition",
+      "behavior",
+      "care-burden",
+      "treatment-advocacy"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "High-value caregiver-authored archive with repeated updates over time; likely strong for baseline-vs-current comparisons and extracting parent phrasing."
+  },
+  {
+    "id": "PSS-005",
+    "kind": "public-source",
+    "label": "Saving Liv fundraiser",
+    "sourceUrls": [
+      "https://www.gofundme.com/f/pvzfz-saving-liv"
+    ],
+    "platform": "GoFundMe",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "fundraiser",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "snapshot",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Good for account discovery and advocacy framing, but fundraiser pages can contain highly identifiable family details and should stay outside any production evidence set."
+  },
+  {
+    "id": "PSS-006",
+    "kind": "public-source",
+    "label": "Cure Sanfilippo Foundation Saving Liv page",
+    "sourceUrls": [
+      "https://curesanfilippofoundation.org/savingliv/"
+    ],
+    "platform": "Cure Sanfilippo Foundation",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "nonprofit-family-story",
+    "authorRole": "family-foundation",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "snapshot",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "low",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "A structured advocacy page that can anchor family identity resolution across linked public sources without needing direct social scraping first."
+  },
+  {
+    "id": "PSS-007",
+    "kind": "public-source",
+    "label": "Haidyn's Hope link hub",
+    "sourceUrls": [
+      "https://linktr.ee/HaidynsHope"
+    ],
+    "platform": "Linktree",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "social-link-hub",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "snapshot",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "low",
+    "consentRisk": "high",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Useful as a public pointer set to discover official family-controlled accounts, but downstream platform scraping should be treated as fragile and higher-risk."
+  },
+  {
+    "id": "PSS-008",
+    "kind": "public-source",
+    "label": "Abby's Alliance link hub",
+    "sourceUrls": [
+      "https://linktr.ee/abbysalliance"
+    ],
+    "platform": "Linktree",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "social-link-hub",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "snapshot",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "low",
+    "consentRisk": "high",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Another discovery seed for public account mapping; valuable for exploration, but not ideal as direct evidence because the hub itself has limited narrative depth."
+  },
+  {
+    "id": "PSS-009",
+    "kind": "public-source",
+    "label": "WXYZ family story video",
+    "sourceUrls": [
+      "https://www.youtube.com/watch?v=rpdnGknhDds"
+    ],
+    "platform": "YouTube",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "news-video",
+    "authorRole": "newsroom",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "speech-language",
+      "memory-recognition",
+      "treatment-advocacy"
+    ],
+    "temporalSignal": "snapshot",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "A strong prototype source for transcript ingestion, quote alignment, and multimodal lineage because newsroom videos often have clearer metadata and machine-readable captions."
+  },
+  {
+    "id": "PSS-010",
+    "kind": "public-source",
+    "label": "Reddit caregiver loss post in daddit",
+    "sourceUrls": [
+      "https://www.reddit.com/r/daddit/comments/uecpgj/one_year_anniversary_of_the_loss_of_my_son/"
+    ],
+    "platform": "Reddit",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "reddit-post",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "grief-bereavement",
+      "care-burden",
+      "diagnosis-journey"
+    ],
+    "temporalSignal": "post-loss-reflection",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Useful for testing parent-voice extraction and support-community language, but grief content and direct identifiers make it unsuitable for anything beyond tightly controlled prototyping."
+  },
+  {
+    "id": "PSS-011",
+    "kind": "public-source",
+    "label": "Reddit caregiver grief post in GriefSupport",
+    "sourceUrls": [
+      "https://www.reddit.com/r/GriefSupport/comments/1r4jhf9/i_took_a_job_at_a_school_to_be_more_available_to/"
+    ],
+    "platform": "Reddit",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "unknown",
+    "trialProgram": null,
+    "interventionClass": null,
+    "sourceConfidence": "public-source",
+    "namedPublicly": false,
+    "confirmedParticipation": false,
+    "sourceType": "reddit-post",
+    "authorRole": "parent",
+    "symptomDomains": [
+      "grief-bereavement",
+      "care-burden",
+      "diagnosis-journey"
+    ],
+    "temporalSignal": "post-loss-reflection",
+    "extractionValue": "medium",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": null,
+    "evidenceSummary": "Publicly accessible caregiver, nonprofit, newsroom, or community source suitable for discovery and narrative-extraction prototyping.",
+    "outcomeSignals": [],
+    "notes": "Another public parent-voice example for classifier and taxonomy testing, with strong caution around sensitive bereavement language and re-identification risk."
+  },
+  {
+    "id": "TPS-001",
+    "kind": "trial-participant",
+    "label": "Eliza O'Neill",
+    "sourceUrls": [
+      "https://dnascience.plos.org/2016/05/19/eliza-gets-her-gene-therapy/",
+      "https://abcnews.go.com/Health/family-isolated-years-hoping-qualify-daughters-experimental-treatment/story?id=41394212",
+      "https://curesanfilippofoundation.org/2024/04/saving-eliza-launched-10-years-ago-eventually-raising-record-setting-2-million-to-cure-sanfilippo-syndrome/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": "Eliza O'Neill",
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIA",
+    "trialProgram": "UX111-ABO-102",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "confirmed",
+    "namedPublicly": true,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "speech-language",
+      "mobility",
+      "diagnosis-journey",
+      "sleep"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": "primary",
+    "evidenceSummary": "Public sources explicitly identify Eliza O'Neill as the first child treated in the Phase 1/2 Abeona trial that became ABO-102 and later UX111.",
+    "outcomeSignals": [
+      "sleeping through the night",
+      "non-verbal communication gains",
+      "fork use for eating",
+      "survival beyond typical natural-history expectations"
+    ],
+    "notes": "Best named public UX111-linked child for narrative extraction, longitudinal milestone mapping, and baseline-versus-follow-up comparisons."
+  },
+  {
+    "id": "TPS-002",
+    "kind": "trial-participant",
+    "label": "Unnamed age-2 higher-dose UX111 child",
+    "sourceUrls": [
+      "https://dnascience.plos.org/2025/10/23/an-avalanche-of-advances-in-human-genetics/",
+      "https://curesanfilippofoundation.org/2025/08/foundations-dr-oneill-publishes-op-ed-in-the-hill-urging-fda-to-act/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIA",
+    "trialProgram": "UX111-ABO-102",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "likely-anonymized",
+    "namedPublicly": false,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "speech-language",
+      "mobility",
+      "behavior"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": "primary",
+    "evidenceSummary": "Public retellings describe another child treated with a higher dose of UX111 at age 2 and report later functional gains, but do not identify the child by name.",
+    "outcomeSignals": [
+      "reading",
+      "softball participation",
+      "peer social activity"
+    ],
+    "notes": "High-value UX111 efficacy pattern for comparison logic, but identity is intentionally not public in the source trail I could verify."
+  },
+  {
+    "id": "TPS-003",
+    "kind": "trial-participant",
+    "label": "Ornella Aiach",
+    "sourceUrls": [
+      "https://psmag.com/news/how-a-former-financial-consultant-built-a-company-to-cure-rare-diseases/",
+      "https://dnascience.plos.org/2016/08/18/3-gene-therapy-trials-report-good-news/",
+      "https://curesanfilippofoundation.org/2020/03/lys-saf302-gene-therapy/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": "Ornella Aiach",
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIA",
+    "trialProgram": "LYS-SAF302",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "confirmed",
+    "namedPublicly": true,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "behavior"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": "secondary",
+    "evidenceSummary": "Public interviews and articles state that Ornella Aiach received Lysogene's Sanfilippo type A gene therapy in France.",
+    "outcomeSignals": [
+      "behavioral calming after treatment"
+    ],
+    "notes": "Strong named non-UX111 gene-therapy comparator for cross-program narrative alignment and early-versus-late treatment framing."
+  },
+  {
+    "id": "TPS-004",
+    "kind": "trial-participant",
+    "label": "Will Byers",
+    "sourceUrls": [
+      "https://dnascience.plos.org/2015/07/16/saving-eliza-campaign-helps-another-child/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": "Will Byers",
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIB",
+    "trialProgram": "Type-B-ERT-Minnesota",
+    "interventionClass": "enzyme-replacement",
+    "sourceConfidence": "confirmed",
+    "namedPublicly": true,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "diagnosis-journey"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "medium",
+    "comparisonUse": "secondary",
+    "evidenceSummary": "A public feature says Will entered a Minnesota Sanfilippo type B clinical trial and received the final enrollment slot for an enzyme replacement study.",
+    "outcomeSignals": [
+      "early diagnosis leading to trial entry"
+    ],
+    "notes": "Useful non-gene-therapy comparator for distinguishing trial-participation narratives from actual post-treatment functional retention signals."
+  },
+  {
+    "id": "TPS-005",
+    "kind": "trial-participant",
+    "label": "Four-child Paris gene-therapy cohort",
+    "sourceUrls": [
+      "https://presse.inserm.fr/en/clinical-trial-launched-to-treat-sanfilippo-b-syndrome-using-gene-therapy/52364/",
+      "https://presse.inserm.fr/en/gene-therapy-first-results-in-children-with-sanfilippo-b-syndrome/57645/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIB",
+    "trialProgram": "Type-B-Gene-Therapy-Paris",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "aggregate-only",
+    "namedPublicly": false,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "memory-recognition",
+      "diagnosis-journey"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": "secondary",
+    "evidenceSummary": "Official press materials describe four treated children in a Paris Sanfilippo type B gene-therapy study, but do not publicly name them.",
+    "outcomeSignals": [
+      "neurocognitive benefit",
+      "30-month follow-up",
+      "treatment tolerability"
+    ],
+    "notes": "Aggregate-only reference set for trial-language parsing and outcome-category mapping when named patient stories are unavailable."
+  },
+  {
+    "id": "TPS-006",
+    "kind": "trial-participant",
+    "label": "Five-patient OTL-201 proof-of-concept cohort",
+    "sourceUrls": [
+      "https://ir.orchard-tx.com/news-releases/news-release-details/orchard-therapeutics-announces-first-patient-dosed-otl-201-gene",
+      "https://mft.nhs.uk/2023/02/24/early-results-of-gene-therapy-trial-for-childhood-dementia-show-promise/"
+    ],
+    "platform": "multi-source",
+    "access": "public",
+    "subjectLabel": null,
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS IIIA",
+    "trialProgram": "OTL-201",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "aggregate-only",
+    "namedPublicly": false,
+    "confirmedParticipation": true,
+    "sourceType": "trial-linked-public-story",
+    "authorRole": "mixed",
+    "symptomDomains": [
+      "memory-recognition",
+      "speech-language",
+      "behavior"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "medium",
+    "consentRisk": "high",
+    "comparisonUse": "secondary",
+    "evidenceSummary": "Sponsor and hospital sources describe an early treated cohort for OTL-201 with age-at-dosing and functional outcomes, but not child identities.",
+    "outcomeSignals": [
+      "cognitive gains in line with healthy development",
+      "normal speech acquisition in some children",
+      "complex play"
+    ],
+    "notes": "Helpful for broadening cross-trial comparisons around early dosing and preserved development without overstating named-patient provenance."
+  }
+]
