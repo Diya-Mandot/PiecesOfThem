@@ -16,36 +16,36 @@ This repo uses strict ownership. No one should work on another person's phase fi
 - Owner: Frontend
 
 Owns:
-- `app/page.tsx`
-- `components/landing-page.tsx`
-- `app/case/demo-child-a/page.tsx`
-- `components/dashboard-shell.tsx`
-- `app/report/demo-child-a/page.tsx`
-- `components/report-page.tsx`
-- `app/globals.css`
-- `tailwind.config.ts`
+- `frontend/app/page.tsx`
+- `frontend/components/landing-page.tsx`
+- `frontend/app/case/demo-child-a/page.tsx`
+- `frontend/components/dashboard-shell.tsx`
+- `frontend/app/report/demo-child-a/page.tsx`
+- `frontend/components/report-page.tsx`
+- `frontend/app/globals.css`
+- `frontend/tailwind.config.ts`
 
 ### AI / RAG branch
 - Branch name: `feat/ai-rag-core`
 - Owner: AI / RAG
 
 Owns:
-- `lib/types.ts`
-- `lib/view-types.ts`
-- `lib/data.ts`
-- `lib/logic.ts`
+- `frontend/lib/types.ts`
+- `frontend/lib/view-types.ts`
+- `frontend/lib/data.ts`
+- `frontend/lib/logic.ts`
 
 ### Backend branch
 - Branch name: `feat/backend-delivery`
 - Owner: Backend
 
 Owns:
-- `app/api/cases/[caseId]/route.ts`
-- `app/api/fragments/route.ts`
-- `app/api/claims/route.ts`
-- `app/api/report/[caseId]/route.ts`
-- `app/layout.tsx`
-- `package.json`
+- `frontend/app/api/cases/[caseId]/route.ts`
+- `frontend/app/api/fragments/route.ts`
+- `frontend/app/api/claims/route.ts`
+- `frontend/app/api/report/[caseId]/route.ts`
+- `frontend/app/layout.tsx`
+- `frontend/package.json`
 - `README.md`
 
 ## Setup Commands
@@ -79,6 +79,7 @@ Reason:
 - Before merging to `main`, run:
 
 ```bash
+cd frontend
 npm run typecheck
 npm run build
 ```
