@@ -134,10 +134,10 @@ function HeroQuote() {
           <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-rosewood/60">
             A piece, translated
           </p>
-          <blockquote className="font-display text-4xl leading-[1.15] tracking-[-0.02em] text-slate sm:text-5xl">
+          <blockquote className="font-newsreader text-4xl italic leading-[1.2] text-slate sm:text-5xl">
             &ldquo;She recognized her grandmother immediately. Said her name before anyone prompted her.&rdquo;
           </blockquote>
-          <p className="mt-5 text-sm text-slate/50">
+          <p className="font-sans mt-5 text-sm text-slate/50">
             — Parent journal, January 2025 &nbsp;·&nbsp; Recognition domain &nbsp;·&nbsp; Confidence: 96%
           </p>
         </div>
@@ -150,8 +150,8 @@ function HeroQuote() {
             { label: "Days to deadline", value: `${Math.ceil((new Date("2026-09-19").getTime() - Date.now()) / 86_400_000)}` },
           ].map(({ label, value }) => (
             <div key={label} className="text-right">
-              <p className="font-display text-4xl text-slate">{value}</p>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate/40">{label}</p>
+              <p className="font-instrument text-4xl font-medium text-slate">{value}</p>
+              <p className="font-sans text-xs uppercase tracking-[0.2em] text-slate/40">{label}</p>
             </div>
           ))}
         </div>
@@ -347,8 +347,8 @@ function EvidenceSidebar({
 
           {/* Human story */}
           <div className="rounded-[1.3rem] border border-stone/25 bg-white px-5 py-5">
-            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate/40">Human Story</p>
-            <p className="font-display text-xl leading-relaxed text-slate">
+            <p className="font-sans mb-3 text-[11px] uppercase tracking-[0.22em] text-slate/40">Human Story</p>
+            <p className="font-newsreader text-xl italic leading-relaxed text-slate">
               &ldquo;{fragment?.excerpt}&rdquo;
             </p>
             <p className="mt-3 text-xs text-slate/35">{fragment?.rawRef}</p>

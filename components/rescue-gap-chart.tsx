@@ -178,17 +178,17 @@ export function RescueGapChart({ fragments, hoveredId, onHover, onSelect }: Prop
       <div className="grid grid-cols-3 divide-x divide-stone/20 border-t border-stone/15">
         <div className="px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">Retention Delta</p>
-          <p className="mt-1 font-display text-3xl text-terracotta">{kpis.retentionDeltaDisplay}</p>
+          <p className="mt-1 font-instrument text-3xl font-semibold text-terracotta">{kpis.retentionDeltaDisplay}</p>
           <p className="mt-0.5 text-xs text-slate/35">vs. untreated trajectory</p>
         </div>
         <div className="px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">Statistical Significance</p>
-          <p className="mt-1 font-display text-3xl text-sage">{kpis.pValue}</p>
+          <p className="mt-1 font-instrument text-3xl font-semibold text-sage">{kpis.pValue}</p>
           <p className="mt-0.5 text-xs text-slate/35">{kpis.pLabel}</p>
         </div>
         <div className="px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">Observation Window</p>
-          <p className="mt-1 font-display text-3xl text-slate">{kpis.observationMonths} mo</p>
+          <p className="mt-1 font-instrument text-3xl font-semibold text-slate">{kpis.observationMonths} mo</p>
           <p className="mt-0.5 text-xs text-slate/35">Mar 2024 – Feb 2026</p>
         </div>
       </div>

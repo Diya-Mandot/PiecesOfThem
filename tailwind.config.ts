@@ -41,8 +41,14 @@ const config: Config = {
           "radial-gradient(circle at top left, rgba(243, 216, 210, 0.85), transparent 35%), radial-gradient(circle at 80% 20%, rgba(201, 137, 114, 0.22), transparent 28%), linear-gradient(135deg, #fbf6f1 0%, #f4ebe2 100%)",
       },
       fontFamily: {
-        display: ["Iowan Old Style", "Palatino Linotype", "Book Antiqua", "serif"],
-        sans: ["Avenir Next", "Segoe UI", "Helvetica Neue", "sans-serif"],
+        // Editorial New (paid) — swap var(--font-editorial) for the real file when available
+        display:     ["var(--font-editorial)", "Palatino Linotype", "serif"],
+        // Parent quotes / journal feel
+        newsreader:  ["var(--font-newsreader)", "Georgia", "serif"],
+        // FDA data / metrics / numbers
+        instrument:  ["var(--font-instrument)", "system-ui", "sans-serif"],
+        // Buttons / labels / UI chrome
+        sans:        ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },
