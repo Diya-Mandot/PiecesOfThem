@@ -18,8 +18,8 @@ Output:
 Owner: AI / RAG
 
 Files:
-- `lib/types.ts`
-- `lib/view-types.ts`
+- `frontend/lib/types.ts`
+- `frontend/lib/view-types.ts`
 
 Purpose:
 - define `CaseRecord`, `EvidenceFragment`, and `Claim`
@@ -33,8 +33,8 @@ Done when:
 Owner: AI / RAG
 
 Files:
-- `lib/data.ts`
-- `lib/logic.ts`
+- `frontend/lib/data.ts`
+- `frontend/lib/logic.ts`
 
 Purpose:
 - create the demo case
@@ -49,10 +49,10 @@ Done when:
 Owner: Frontend
 
 Files:
-- `app/page.tsx`
-- `components/landing-page.tsx`
-- `app/globals.css`
-- `tailwind.config.ts`
+- `frontend/app/page.tsx`
+- `frontend/components/landing-page.tsx`
+- `frontend/app/globals.css`
+- `frontend/tailwind.config.ts`
 
 Purpose:
 - create a strong first impression
@@ -66,8 +66,8 @@ Done when:
 Owner: Frontend
 
 Files:
-- `app/case/demo-child-a/page.tsx`
-- `components/dashboard-shell.tsx`
+- `frontend/app/case/demo-child-a/page.tsx`
+- `frontend/components/dashboard-shell.tsx`
 
 Purpose:
 - build the main interactive demo screen
@@ -80,10 +80,10 @@ Done when:
 Owner: Backend
 
 Files:
-- `app/api/cases/[caseId]/route.ts`
-- `app/api/fragments/route.ts`
-- `app/api/claims/route.ts`
-- `app/api/report/[caseId]/route.ts`
+- `frontend/app/api/cases/[caseId]/route.ts`
+- `frontend/app/api/fragments/route.ts`
+- `frontend/app/api/claims/route.ts`
+- `frontend/app/api/report/[caseId]/route.ts`
 
 Purpose:
 - expose stable route responses
@@ -98,8 +98,8 @@ Done when:
 Owner: Frontend
 
 Files:
-- `app/report/demo-child-a/page.tsx`
-- `components/report-page.tsx`
+- `frontend/app/report/demo-child-a/page.tsx`
+- `frontend/components/report-page.tsx`
 
 Purpose:
 - create a polished report artifact
@@ -112,8 +112,8 @@ Done when:
 Owner: AI / RAG
 
 Files:
-- `lib/data.ts`
-- `lib/logic.ts`
+- `frontend/lib/data.ts`
+- `frontend/lib/logic.ts`
 
 Purpose:
 - improve retrieval quality
@@ -127,8 +127,8 @@ Done when:
 Owner: Backend
 
 Files:
-- `app/layout.tsx`
-- `package.json`
+- `frontend/app/layout.tsx`
+- `frontend/package.json`
 - `README.md`
 
 Purpose:
