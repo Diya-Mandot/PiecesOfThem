@@ -483,6 +483,9 @@ export function DashboardShell({ bundle }: { bundle: CaseBundle }) {
   const [hoveredChartId, setHoveredChartId] = useState<string | null>(null);
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [filterMode, setFilterMode]         = useState<FilterMode>("all");
+  const [searchQuery, setSearchQuery]       = useState("");
+  const [rankedIds, setRankedIds]           = useState<string[] | null>(null);
+  const [searching, setSearching]           = useState(false);
 
   const selectedFragment = selectedId
     ? bundle.fragments.find(f => f.id === selectedId) ?? null
@@ -492,9 +495,48 @@ export function DashboardShell({ bundle }: { bundle: CaseBundle }) {
     setSelectedId(prev => prev === id ? null : id);
   }
 
-  const filtered = bundle.fragments.filter(f =>
+  // Debounced semantic search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setRankedIds(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: searchQuery,
+            fragments: bundle.fragments.map(f => ({
+              id: f.id,
+              title: f.title,
+              excerpt: f.excerpt,
+            })),
+          }),
+        });
+        const data = await res.json() as { ranked: { id: string; score: number }[] };
+        setRankedIds(data.ranked.map(r => r.id));
+      } catch {
+        setRankedIds(null);
+      } finally {
+        setSearching(false);
+      }
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [searchQuery, bundle.fragments]);
+
+  const domainFiltered = bundle.fragments.filter(f =>
     filterMode === "all" || f.signalDomain === filterMode
   );
+
+  const filtered = rankedIds
+    ? rankedIds
+        .map(id => domainFiltered.find(f => f.id === id))
+        .filter(Boolean) as typeof domainFiltered
+    : domainFiltered;
 
   return (
     <div
@@ -545,13 +587,48 @@ export function DashboardShell({ bundle }: { bundle: CaseBundle }) {
 
         {/* ── Pieces ── */}
         <div>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
             <div>
               <h2 className="font-display text-2xl text-slate">The Pieces</h2>
               <p className="mt-0.5 text-sm text-slate/45">
-                {filtered.length} scraped fragments — each one a point on the chart above
+                {rankedIds
+                  ? `${filtered.length} results ranked by relevance`
+                  : `${filtered.length} scraped fragments — each one a point on the chart above`}
               </p>
             </div>
+            <div className="flex flex-col gap-2.5">
+            {/* Search bar */}
+            <div className="relative w-full sm:w-72">
+              <svg
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate/35"
+                width="14" height="14" viewBox="0 0 14 14" fill="none"
+              >
+                <circle cx="6" cy="6" r="4.25" stroke="currentColor" strokeWidth="1.3" />
+                <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search pieces…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full rounded-full border border-stone/30 bg-white/80 py-2 pl-8 pr-9 text-sm text-slate placeholder:text-slate/35 focus:border-sage/50 focus:outline-none focus:ring-2 focus:ring-sage/20"
+              />
+              {searching && (
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate/30" width="13" height="13" viewBox="0 0 14 14">
+                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="10 6" />
+                </svg>
+              )}
+              {!searching && searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate/35 hover:text-slate/70"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
             {/* Domain filter pills */}
             <div className="flex flex-wrap gap-1.5">
               {(["all", "vocabulary", "recognition", "sleep", "behavior", "motor"] as FilterMode[]).map(mode => {
@@ -581,6 +658,7 @@ export function DashboardShell({ bundle }: { bundle: CaseBundle }) {
                 );
               })}
             </div>
+            </div>{/* end search+pills wrapper */}
           </div>
 
           {/* B: Photo card grid */}
