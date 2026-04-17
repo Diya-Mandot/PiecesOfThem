@@ -1,3 +1,4 @@
+// Keep data/seed-catalog.json in sync with this catalog for the local Python ingestion pipeline.
 import { publicSourcePipelineNotes, publicSourceSeeds } from "@/lib/public-source-seeds";
 import { trialParticipantSeedNotes, trialParticipantSeeds } from "@/lib/trial-participant-seeds";
 
@@ -87,7 +88,7 @@ export const seedCatalog: SeedCatalogRecord[] = [
     sourceUrls: seed.sourceUrls,
     platform: "multi-source",
     access: "public",
-    subjectLabel: seed.childLabel,
+    subjectLabel: seed.namedPublicly ? seed.childLabel : null,
     childAgeSignal: "child",
     diseaseSubtype: seed.subtype,
     trialProgram: seed.trialProgram,
