@@ -70,7 +70,7 @@ cp .env.example .env
 pip install -r requirements.txt
 ```
 
-Planned pipeline commands for later tasks:
+Commands:
 
 ```bash
 python -m pipeline.main ensure-db
@@ -80,6 +80,8 @@ python -m pipeline.main scrape
 python -m pipeline.main extract
 python -m pipeline.main run-all
 ```
+
+If `python -m pipeline.main extract` fails, confirm that `OPENAI_API_KEY` is set in `.env` and that the selected model is accessible from your account.
 
 ## Included demo surfaces
 
