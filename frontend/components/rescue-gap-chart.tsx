@@ -110,6 +110,10 @@ export function RescueGapChart({ fragments, hoveredId, onHover, onSelect }: Prop
               <stop offset="0%" stopColor="#7A9E87" stopOpacity="0.22" />
               <stop offset="100%" stopColor="#7A9E87" stopOpacity="0.03" />
             </linearGradient>
+            <filter id="deadlineGlow" x="-200%" y="-50%" width="500%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
           </defs>
 
           {/* Grid */}
@@ -126,10 +130,12 @@ export function RescueGapChart({ fragments, hoveredId, onHover, onSelect }: Prop
             <text key={label} x={x} y={H - 6} textAnchor="middle" fontSize="11" fill="#B0A090">{label}</text>
           ))}
 
-          {/* Deadline marker */}
+          {/* Deadline marker — glowing petal pink */}
           <line x1={DEADLINE_X} y1={PAD.top} x2={DEADLINE_X} y2={H - PAD.bottom}
-            stroke="#C4704A" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-          <text x={DEADLINE_X + 5} y={PAD.top + 13} fontSize="9" fill="#C4704A" opacity="0.7">Sep 19 deadline</text>
+            stroke="#F9C0BB" strokeWidth="2.5" filter="url(#deadlineGlow)" opacity="0.9" />
+          <line x1={DEADLINE_X} y1={PAD.top} x2={DEADLINE_X} y2={H - PAD.bottom}
+            stroke="#F9C0BB" strokeWidth="1" opacity="1" />
+          <text x={DEADLINE_X + 6} y={PAD.top + 13} fontSize="9" fill="#C4704A" fontWeight="600" opacity="0.9">Sep 19 deadline</text>
 
           {/* Natural history shadow */}
           <path d={naturalFill} fill="url(#naturalGrad)" />
@@ -189,7 +195,7 @@ export function RescueGapChart({ fragments, hoveredId, onHover, onSelect }: Prop
         <div className="px-6 py-4">
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">Observation Window</p>
           <p className="mt-1 font-instrument text-3xl font-semibold text-slate">{kpis.observationMonths} mo</p>
-          <p className="mt-0.5 text-xs text-slate/35">Mar 2024 – Feb 2026</p>
+          <p className="mt-0.5 text-xs text-slate/35">Nearly 2 years of sustained brain protection</p>
         </div>
       </div>
     </div>
