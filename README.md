@@ -56,6 +56,24 @@ npm install
 npm run dev
 ```
 
+## Local ingestion pipeline
+
+```bash
+cp .env.example .env
+pip install -r requirements.txt
+```
+
+Planned pipeline commands for later tasks:
+
+```bash
+python -m pipeline.main ensure-db
+python -m pipeline.main init-db
+python -m pipeline.main sync-seeds
+python -m pipeline.main scrape
+python -m pipeline.main extract
+python -m pipeline.main run-all
+```
+
 ## Included demo surfaces
 
 - `/` editorial landing page
