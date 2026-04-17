@@ -550,7 +550,7 @@ export function DashboardShell({ bundle }: { bundle: CaseBundle }) {
       >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <span className="font-display text-xl tracking-[-0.02em] text-slate">PiecesOfThem</span>
+            <a href="/" className="font-display text-xl tracking-[-0.02em] text-slate hover:text-terracotta transition-colors">PiecesOfThem</a>
             <span className="h-3.5 w-px bg-stone/40" />
             <span className="hidden text-xs uppercase tracking-[0.2em] text-slate/40 sm:block">Evidence Workbench</span>
           </div>
