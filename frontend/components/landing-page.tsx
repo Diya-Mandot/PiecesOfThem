@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const DAYS_TO_DEADLINE = Math.ceil(
   (new Date("2026-09-19").getTime() - Date.now()) / 86_400_000,
@@ -197,57 +198,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── PULL QUOTE ── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(160deg, #2C2930 0%, #38333C 100%)" }}>
-        <div className="pointer-events-none absolute -right-32 top-0 h-[500px] w-[500px] rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #F9C0BB, transparent)" }} />
-        <div className="pointer-events-none absolute -left-20 bottom-0 h-[300px] w-[300px] rounded-full opacity-[0.08]"
-          style={{ background: "radial-gradient(circle, #C4704A, transparent)" }} />
-
-        <div className="relative mx-auto max-w-4xl px-8 py-24 lg:px-16 lg:py-32">
-          <div className="mb-10 flex items-center gap-3">
-            <div className="h-px w-8 bg-petalPink/50" />
-            <p className="text-[10px] uppercase tracking-[0.35em] text-petalPink/70">A piece, in their words</p>
-          </div>
-
-          <blockquote className="space-y-6">
-            <p className="font-newsreader text-xl leading-[1.7] text-white/50 lg:text-2xl" style={{ fontStyle: "italic" }}>
-              &ldquo;We were told early to late teens when he was diagnosed at ten and a half. He is fifteen now and I still cannot say that out loud without something catching in my throat.
-            </p>
-            <p className="font-newsreader text-2xl leading-[1.45] text-white lg:text-[2.5rem]" style={{ fontStyle: "italic" }}>
-              He still knows our names. He still knows his dog. I thought I would spend these years grieving on a schedule we were given — but instead I find myself writing past it.&rdquo;
-            </p>
-          </blockquote>
-
-          <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-white/10 pt-8">
-            <p className="text-sm text-white/35">
-              — Mike Dobbyn, Sanfilippo dad ·{" "}
-              <a
-                href="https://www.thecantoncitizen.com/2024/06/14/reflections-of-a-sanfilippo-dad-5-years-post-diagnosis/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2 transition hover:text-white/55"
-              >
-                The Canton Citizen · June 2024
-              </a>
-            </p>
-            <span className="rounded-full border border-petalPink/30 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-petalPink/60">
-              Recognition domain
-            </span>
-            <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/25">
-              MPS IIIC · 5-yr post-diagnosis
-            </span>
-          </div>
-        </div>
-      </section>
-
       {/* ── WHAT WE DO ── */}
       <section className="px-8 pb-24 pt-20 lg:px-16">
         <div className="mb-12">
           <h2 className="font-display text-4xl text-slate">What we do with a story.</h2>
-          <p className="font-newsreader mt-3 max-w-lg text-lg text-slate/55" style={{ fontStyle: "italic" }}>
-            A parent posts in a forum at 2am. We turn that into evidence the FDA can act on.
-          </p>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {STEPS.map(step => (
@@ -277,23 +231,10 @@ export function LandingPage() {
             style={{ background: "radial-gradient(circle, #C4704A, transparent)" }} />
 
           <p className="mb-4 text-xs uppercase tracking-[0.3em] text-white/40">The deadline is real</p>
-          <h2 className="font-display mx-auto max-w-xl text-4xl text-white lg:text-5xl">
-            {DAYS_TO_DEADLINE} days to make these stories count.
-          </h2>
+          <BottomCountdown />
           <p className="font-newsreader mx-auto mt-5 max-w-md text-lg text-white/50" style={{ fontStyle: "italic" }}>
             UX111 wasn&apos;t rejected for safety. It was rejected for paperwork. Help us fix that.
           </p>
-          <Link href="/case/demo-child-a"
-            className="group mt-10 inline-flex items-center gap-2 rounded-full bg-terracotta px-9 py-4 text-sm font-medium text-white shadow-sm transition hover:bg-oxidizedRose">
-            <svg
-              className="h-3.5 w-3.5 shrink-0 translate-x-[-18px] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
-              viewBox="0 0 14 14" fill="none"
-            >
-              <path d="M2 2L6 1L12 5L13 11L8 13L2 9L2 2Z" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              <circle cx="7.5" cy="6.5" r="1.5" fill="white" opacity="0.6" />
-            </svg>
-            <span className="transition-all duration-200 group-hover:-translate-x-0.5">Enter the Archive</span>
-          </Link>
         </div>
       </section>
 
@@ -308,4 +249,67 @@ export function LandingPage() {
       </footer>
     </main>
   );
+}
+
+function BottomCountdown() {
+  const [timeLeft, setTimeLeft] = useState(() => getCountdownParts());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTimeLeft(getCountdownParts());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="mt-8 flex flex-col items-center">
+      <div className="text-center text-white">
+        <div className="font-display text-6xl leading-none tracking-[-0.04em] lg:text-7xl">
+          {timeLeft.days}
+        </div>
+        <div className="mt-2 text-sm uppercase tracking-[0.22em] text-white/42">
+          days to make these stories count.
+        </div>
+      </div>
+      <div className="mt-6 flex items-center gap-3 text-xl text-white/55 lg:text-2xl">
+        <TimePill label="Hours" value={timeLeft.hours} />
+        <span className="mb-5 text-white/20">:</span>
+        <TimePill label="Minutes" value={timeLeft.minutes} />
+        <span className="mb-5 text-white/20">:</span>
+        <TimePill label="Seconds" value={timeLeft.seconds} />
+      </div>
+      <p className="mt-5 text-xs uppercase tracking-[0.24em] text-white/30">
+        Until the FDA decision window closes
+      </p>
+    </div>
+  );
+}
+
+function TimePill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-3 text-center backdrop-blur-sm">
+      <div className="font-display text-3xl leading-none tracking-[-0.03em] text-white lg:text-4xl">
+        {value}
+      </div>
+      <div className="mt-2 text-[10px] uppercase tracking-[0.24em] text-white/32">{label}</div>
+    </div>
+  );
+}
+
+function getCountdownParts() {
+  const deadline = new Date("2026-09-19T23:59:59-06:00").getTime();
+  const diff = Math.max(deadline - Date.now(), 0);
+
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  const seconds = Math.floor((diff % 60_000) / 1000);
+
+  return {
+    days: String(days),
+    hours: String(hours).padStart(2, "0"),
+    minutes: String(minutes).padStart(2, "0"),
+    seconds: String(seconds).padStart(2, "0"),
+  };
 }

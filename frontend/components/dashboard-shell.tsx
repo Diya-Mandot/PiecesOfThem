@@ -142,7 +142,6 @@ export function DashboardShell({
   }, [domainFiltered, rankedIds]);
 
   const activeSearch = searchQuery.trim();
-  const activeDomainLabel = filterMode === "all" ? "All domains" : DOMAIN_LABEL[filterMode];
   const searchMode = activeSearch.length > 0;
   const reportReadiness = bundle.caseRecord.reportReadiness;
 
@@ -212,11 +211,6 @@ export function DashboardShell({
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl text-slate">The Pieces</h2>
-              <p className="mt-0.5 text-sm text-slate/45">
-                {searchMode
-                  ? `${filtered.length} fragments ranked semantically for "${activeSearch}"`
-                  : `${filtered.length} structured fragments projected from the ingestion pipeline`}
-              </p>
             </div>
             <div className="flex flex-col items-stretch gap-2.5 sm:items-end">
               <div className="relative w-full sm:w-[320px]">
@@ -311,22 +305,6 @@ export function DashboardShell({
             </div>
           </div>
 
-          <div className="mb-5 flex flex-wrap items-center gap-2">
-            <StatusChip label={activeDomainLabel} tone="neutral" />
-            {searchMode ? (
-              <StatusChip
-                label={searching ? "Ranking semantically..." : `Semantic mode: ${activeSearch}`}
-                tone="accent"
-              />
-            ) : (
-              <StatusChip label="Chronological browse mode" tone="neutral" />
-            )}
-            {!searching && filtered[0] && searchMode ? (
-              <StatusChip label={`Top match: ${filtered[0].title}`} tone="soft" />
-            ) : null}
-            <StatusChip label={readinessLabel(reportReadiness)} tone={readinessTone(reportReadiness)} />
-          </div>
-
           {filtered.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((fragment, index) => (
@@ -385,7 +363,7 @@ function HeroQuote({
     >
       {/* Large decorative quote mark */}
       <div
-        className="pointer-events-none absolute -left-4 -top-6 font-newsreader text-[18rem] leading-none text-terracotta/10 select-none"
+        className="pointer-events-none absolute left-2 top-1 font-newsreader text-[10rem] leading-none text-terracotta/[0.07] select-none lg:text-[12rem]"
         aria-hidden="true"
         style={{ fontStyle: "italic" }}
       >&ldquo;</div>
@@ -404,31 +382,19 @@ function HeroQuote({
         </div>
 
         {/* Quote */}
-        <blockquote className="font-newsreader text-3xl leading-[1.5] text-slate lg:text-4xl" style={{ fontStyle: "italic" }}>
+        <blockquote
+          className="font-storybook text-[2.4rem] leading-[1.35] text-slate lg:text-[3.4rem]"
+          style={{ fontStyle: "italic" }}
+        >
           He still knows our dog&apos;s name. He still knows mine. Some days that feels like the whole world.
         </blockquote>
 
         {/* Attribution */}
         <p className="mt-5 text-sm text-slate/40">
-          Parent journal · March 2025 · Memory domain
+          Parent journal · March 2025
         </p>
 
         {/* Chips */}
-        <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-stone/20 pt-6">
-          {[
-            { label: `${count} pieces` },
-            { label: `${claimCount} claims` },
-            { label: `${DAYS_TO_DEADLINE}d to Sep 19`, accent: true },
-          ].map(({ label, accent }) => (
-            <span key={label} className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${
-              accent
-                ? "border-terracotta/30 bg-terracotta/8 text-terracotta"
-                : "border-stone/30 bg-white/60 text-slate/50"
-            }`}>
-              {label}
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -544,31 +510,6 @@ function PieceCard({
         </div>
       </div>
     </button>
-  );
-}
-
-function StatusChip({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "neutral" | "accent" | "soft" | "warning";
-}) {
-  const className =
-    tone === "accent"
-      ? "border-terracotta/25 bg-terracotta/10 text-terracotta"
-      : tone === "warning"
-        ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-      : tone === "soft"
-        ? "border-petalPink/35 bg-petalPink/12 text-rosewood/70"
-        : "border-stone/25 bg-white/70 text-slate/55";
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${className}`}
-    >
-      {label}
-    </span>
   );
 }
 
@@ -786,30 +727,6 @@ function GenerateButton({ readiness }: { readiness: ReportReadiness }) {
       {isReviewReady ? "Generate Sept 19th Package" : "Open Labeled Evidence Brief"}
     </Link>
   );
-}
-
-function readinessLabel(readiness: ReportReadiness) {
-  if (readiness === "review-ready") {
-    return "Review-ready evidence";
-  }
-
-  if (readiness === "internal-review") {
-    return "Mixed evidence: internal review only";
-  }
-
-  return "Demo-only evidence";
-}
-
-function readinessTone(readiness: ReportReadiness): "accent" | "warning" | "soft" {
-  if (readiness === "review-ready") {
-    return "accent";
-  }
-
-  if (readiness === "internal-review") {
-    return "warning";
-  }
-
-  return "soft";
 }
 
 function sentenceCase(value: string) {
