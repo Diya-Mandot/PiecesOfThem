@@ -86,15 +86,16 @@ export type ExtractedDatapointRecord = {
   id?: number | null;
   extraction_run_id: number;
   source_document_id: number;
-  chunk_id: number;
   datapoint_type: string;
   schema_version: string;
+  dedupe_key: string;
   subject_label: string | null;
   disease_subtype: string | null;
   trial_program: string | null;
   value_json: Record<string, unknown>;
   confidence: string;
   evidence_quote: string;
+  chunk_ids: number[];
   char_start: number | null;
   char_end: number | null;
   created_at?: string | null;
@@ -108,5 +109,41 @@ export type ExtractionIssueRecord = {
   issue_type: string;
   raw_output: string | null;
   message: string;
+  created_at?: string | null;
+};
+
+export type EvidenceFragmentRecord = {
+  id?: number | null;
+  external_id: string;
+  case_id: string;
+  source_document_id: number;
+  fragment_date: string;
+  source_type: string;
+  modality: string;
+  title: string;
+  excerpt: string;
+  tags_json: string[];
+  signal_domain: string;
+  confidence: string;
+  raw_ref: string;
+  treatment_status: string;
+  treatment_basis: string;
+  trial_program: string | null;
+  intervention_class: string | null;
+  chunk_ids: number[];
+  created_at?: string | null;
+};
+
+export type ClaimRecord = {
+  id?: number | null;
+  external_id: string;
+  case_id: string;
+  statement: string;
+  signal_domain: string;
+  trend: string;
+  confidence: string;
+  treatment_status: string;
+  trial_program: string | null;
+  fragment_ids: string[];
   created_at?: string | null;
 };

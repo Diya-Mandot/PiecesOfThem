@@ -7,12 +7,6 @@ import type {
 } from "@shared/api";
 import type { CaseBundle } from "@shared/types";
 
-import {
-  demoFallbackBundle,
-  demoFallbackReport,
-  demoFallbackTrajectory,
-} from "@/lib/demo-fallback";
-
 const backendBaseUrl = process.env.BACKEND_BASE_URL ?? "http://127.0.0.1:4000";
 
 function getBackendUrl(path: string) {
@@ -67,52 +61,18 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
   ]);
 
   if (!caseResponse || !fragmentsResponse || !claimsResponse) {
-    return caseId === "demo-child-a" ? demoFallbackBundle : null;
+    return null;
   }
 
-  const bundle = {
+  return {
     caseRecord: caseResponse.caseRecord,
     fragments: fragmentsResponse.fragments,
     claims: claimsResponse.claims
   };
-
-  if (caseId === "demo-child-a") {
-    return mergeDemoBundle(bundle, demoFallbackBundle);
-  }
-
-  return bundle;
 }
 
 export async function getReport(caseId: string): Promise<GetReportResponse | null> {
-  const report = await fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
-  if (!report && caseId === "demo-child-a") {
-    return demoFallbackReport;
-  }
-
-  if (report && caseId === "demo-child-a") {
-    return buildReportFromBundle(
-      mergeDemoBundle(
-        {
-          caseRecord: {
-            id: report.id,
-            label: report.label,
-            disease: report.disease,
-            therapy: report.therapy,
-            observationStart: report.observationStart,
-            observationEnd: report.observationEnd,
-            summary: report.summary,
-            dataHandling: report.dataHandling,
-            reviewWindow: report.reviewWindow,
-          },
-          fragments: report.claims.flatMap((claim) => claim.citations),
-          claims: report.claims.map(({ citations: _citations, ...claim }) => claim),
-        },
-        demoFallbackBundle,
-      ),
-    );
-  }
-
-  return report;
+  return fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
 }
 
 export type WorkbenchData = {
@@ -128,62 +88,8 @@ export async function getWorkbenchData(caseId: string): Promise<WorkbenchData | 
   ]);
 
   if (!bundle || !trajectory) {
-    if (caseId === "demo-child-a") {
-      return {
-        bundle: demoFallbackBundle,
-        trajectory: demoFallbackTrajectory,
-      };
-    }
-
     return null;
   }
 
   return { bundle, trajectory };
-}
-
-function mergeDemoBundle(primary: CaseBundle, synthetic: CaseBundle): CaseBundle {
-  const mergedFragments = Array.from(
-    new Map(
-      [...synthetic.fragments, ...primary.fragments].map((fragment) => [fragment.id, fragment]),
-    ).values(),
-  ).sort((left, right) => left.date.localeCompare(right.date));
-
-  const mergedClaims = Array.from(
-    new Map([...synthetic.claims, ...primary.claims].map((claim) => [claim.id, claim])).values(),
-  ).sort((left, right) => left.id.localeCompare(right.id));
-
-  return {
-    caseRecord: {
-      ...synthetic.caseRecord,
-      ...primary.caseRecord,
-      label: synthetic.caseRecord.label,
-      disease: synthetic.caseRecord.disease,
-      therapy: synthetic.caseRecord.therapy,
-      observationStart: mergedFragments[0]?.date ?? synthetic.caseRecord.observationStart,
-      observationEnd:
-        mergedFragments[mergedFragments.length - 1]?.date ?? synthetic.caseRecord.observationEnd,
-      summary:
-        "Hackathon demo case built primarily from authored caregiver-style evidence fragments, then enriched with public-source-grounded signals so the workbench can show temporal retrieval, synthesis, and citation lineage clearly.",
-      dataHandling:
-        "Hackathon demo case uses primarily synthetic, de-identified caregiver-style evidence with supplemental public-source-grounded signals. Review support only; not diagnosis, treatment guidance, or approval recommendation.",
-    },
-    fragments: mergedFragments,
-    claims: mergedClaims,
-  };
-}
-
-function buildReportFromBundle(bundle: CaseBundle): GetReportResponse {
-  return {
-    ...bundle.caseRecord,
-    metrics: {
-      fragmentCount: bundle.fragments.length,
-      claimCount: bundle.claims.length,
-      modalities: Array.from(new Set(bundle.fragments.map((fragment) => fragment.sourceType))).length,
-      domains: Array.from(new Set(bundle.fragments.map((fragment) => fragment.signalDomain))).length,
-    },
-    claims: bundle.claims.map((claim) => ({
-      ...claim,
-      citations: bundle.fragments.filter((fragment) => claim.fragmentIds.includes(fragment.id)),
-    })),
-  };
 }
