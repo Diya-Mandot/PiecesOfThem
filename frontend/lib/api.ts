@@ -13,6 +13,7 @@ import type {
   EvidenceProvenance,
   ReportReadiness,
 } from "@shared/types";
+
 import {
   demoFallbackBundle,
   demoFallbackReport,
@@ -46,6 +47,11 @@ async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | nu
   }
 
   if (!response.ok) {
+    // 5xx: backend is up but erroring — return null so callers can fall back to demo data
+    if (response.status >= 500) {
+      return null;
+    }
+
     let details = response.statusText;
 
     try {
@@ -73,14 +79,20 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
   ]);
 
   if (!caseResponse || !fragmentsResponse || !claimsResponse) {
-    return null;
+    return caseId === "demo-child-a" ? demoFallbackBundle : null;
   }
 
-  return {
+  const bundle = {
     caseRecord: caseResponse.caseRecord,
     fragments: fragmentsResponse.fragments,
     claims: claimsResponse.claims
   };
+
+  if (caseId === "demo-child-a") {
+    return mergeDemoBundle(bundle, demoFallbackBundle);
+  }
+
+  return bundle;
 }
 
 export async function getReport(caseId: string): Promise<GetReportResponse | null> {
