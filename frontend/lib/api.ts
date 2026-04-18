@@ -16,7 +16,6 @@ import type {
 
 import {
   demoFallbackBundle,
-  demoFallbackReport,
   demoFallbackTrajectory,
 } from "@/lib/demo-fallback";
 
@@ -97,35 +96,6 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
 
 export async function getReport(caseId: string): Promise<GetReportResponse | null> {
   const report = await fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
-  if (!report && caseId === "demo-child-a") {
-    return demoFallbackReport;
-  }
-
-  if (report && caseId === "demo-child-a") {
-    return buildReportFromBundle(
-      mergeDemoBundle(
-        {
-          caseRecord: {
-            id: report.id,
-            label: report.label,
-            disease: report.disease,
-            therapy: report.therapy,
-            observationStart: report.observationStart,
-            observationEnd: report.observationEnd,
-            summary: report.summary,
-            dataHandling: report.dataHandling,
-            reviewWindow: report.reviewWindow,
-            provenanceSummary: report.provenanceSummary,
-            reportReadiness: report.reportReadiness,
-          },
-          fragments: report.claims.flatMap((claim) => claim.citations),
-          claims: report.claims.map(({ citations: _citations, ...claim }) => claim),
-        },
-        demoFallbackBundle,
-      ),
-    );
-  }
-
   return report;
 }
 
@@ -196,25 +166,6 @@ function mergeDemoBundle(primary: CaseBundle, synthetic: CaseBundle): CaseBundle
     },
     fragments: mergedFragments,
     claims: mergedClaims,
-  };
-}
-
-function buildReportFromBundle(bundle: CaseBundle): GetReportResponse {
-  return {
-    ...bundle.caseRecord,
-    metrics: {
-      fragmentCount: bundle.fragments.length,
-      claimCount: bundle.claims.length,
-      modalities: Array.from(new Set(bundle.fragments.map((fragment) => fragment.sourceType))).length,
-      domains: Array.from(new Set(bundle.fragments.map((fragment) => fragment.signalDomain))).length,
-      realFragments: bundle.fragments.filter((fragment) => fragment.provenance === "real").length,
-      syntheticFragments: bundle.fragments.filter((fragment) => fragment.provenance === "synthetic").length,
-      mixedClaims: bundle.claims.filter((claim) => claim.provenance === "mixed").length,
-    },
-    claims: bundle.claims.map((claim) => ({
-      ...claim,
-      citations: bundle.fragments.filter((fragment) => claim.fragmentIds.includes(fragment.id)),
-    })),
   };
 }
 

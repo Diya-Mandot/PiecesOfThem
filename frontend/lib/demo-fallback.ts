@@ -511,7 +511,7 @@ function annotateDemoBundle(bundle: RawCaseBundle): CaseBundle {
 }
 
 function deriveFragmentProvenance(id: string): EvidenceProvenance {
-  return id.includes("EXT") ? "real" : "synthetic";
+  return "synthetic";
 }
 
 function deriveClaimProvenance(

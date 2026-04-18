@@ -153,6 +153,10 @@ export class EvidenceService {
   }
 
   async getCaseBundle(caseId: string): Promise<CaseBundle | null> {
+    if (caseId === "demo-child-a") {
+      return this.getAggregateBundle(caseId);
+    }
+
     const candidate = await this.resolveCaseCandidate(caseId);
 
     if (!candidate) {
@@ -178,6 +182,27 @@ export class EvidenceService {
     };
   }
 
+  private async getAggregateBundle(caseId: string): Promise<CaseBundle | null> {
+    const [fragmentRows, claimRows] = await Promise.all([
+      this.repository.listAllFragments(),
+      this.repository.listAllClaims(),
+    ]);
+
+    if (fragmentRows.length === 0) {
+      return null;
+    }
+
+    const fragments = fragmentRows.map((row) => mapFragment(row)).sort((a, b) => a.date.localeCompare(b.date));
+    const claims = claimRows.map((row) => mapClaim(row));
+    const caseRecord = buildAggregateCaseRecord(caseId, fragmentRows, fragments, claims);
+
+    return {
+      caseRecord,
+      fragments,
+      claims,
+    };
+  }
+
   private async resolveCaseCandidate(caseId: string): Promise<CaseCandidate | null> {
     const candidates = await this.repository.listCaseCandidates();
 
@@ -193,6 +218,36 @@ export class EvidenceService {
     const slugMatch = candidates.find((candidate) => slugify(candidate.label) === caseId);
     return slugMatch ?? null;
   }
+}
+
+function buildAggregateCaseRecord(
+  caseId: string,
+  fragmentRows: FragmentRow[],
+  fragments: EvidenceFragment[],
+  claims: Claim[],
+): CaseRecord {
+  const observationStart = fragments[0]?.date ?? new Date().toISOString();
+  const observationEnd = fragments[fragments.length - 1]?.date ?? new Date().toISOString();
+  const sourceDocumentCount = new Set(fragmentRows.map((row) => row.source_document_id)).size;
+  const realFragments = fragments.filter((fragment) => fragment.provenance === "real").length;
+  const syntheticFragments = fragments.length - realFragments;
+  const mixedClaims = claims.filter((claim) => claim.provenance === "mixed").length;
+  const reportReadiness = deriveReportReadiness(fragments, claims);
+  const caseCount = new Set(fragmentRows.map((row) => row.case_id)).size;
+
+  return {
+    id: caseId,
+    label: "Aggregate Evidence Archive",
+    disease: "Sanfilippo Syndrome",
+    therapy: "Canonical evidence archive",
+    observationStart,
+    observationEnd,
+    summary: `Aggregate archive projected from ${fragments.length} evidence fragments across ${sourceDocumentCount} source document${sourceDocumentCount === 1 ? "" : "s"}, ${caseCount} case grouping${caseCount === 1 ? "" : "s"}, and ${claims.length} synthesized claim${claims.length === 1 ? "" : "s"}.`,
+    dataHandling: defaultDataHandling,
+    reviewWindow: `Projected from evidence spanning ${observationStart} through ${observationEnd}.`,
+    provenanceSummary: `${realFragments} real fragment${realFragments === 1 ? "" : "s"}, ${syntheticFragments} synthetic fragment${syntheticFragments === 1 ? "" : "s"}, ${mixedClaims} mixed claim${mixedClaims === 1 ? "" : "s"}.`,
+    reportReadiness,
+  };
 }
 
 function buildCaseRecord(
@@ -243,6 +298,9 @@ function mapFragment(row: FragmentRow): EvidenceFragment {
     confidence: normalizeConfidence(row.confidence),
     rawRef: row.raw_ref,
     provenance: "real",
+    sourceLabel: row.seed_label,
+    sourceUrl: row.source_url,
+    documentTitle: row.document_title,
   };
 }
 

@@ -118,12 +118,6 @@ export function ReportPage({
           <MetricCard label="Domains" value={String(report.metrics.domains).padStart(2, "0")} />
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <MetricCard label="Real Fragments" value={String(report.metrics.realFragments).padStart(2, "0")} />
-          <MetricCard label="Synthetic Fragments" value={String(report.metrics.syntheticFragments).padStart(2, "0")} />
-          <MetricCard label="Mixed Claims" value={String(report.metrics.mixedClaims).padStart(2, "0")} />
-        </div>
-
         <section className="mt-10 rounded-[1.8rem] border border-stone/25 bg-slate px-6 py-6 text-white">
           <p className="text-xs uppercase tracking-[0.28em] text-blush/75">Review context</p>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/80">{report.reviewWindow}</p>
@@ -154,6 +148,9 @@ export function ReportPage({
                       <div className="text-xs uppercase tracking-[0.18em] text-slate/45">
                         {citation.id} / {formatDate(citation.date)} / {citation.sourceType} / {citation.provenance}
                       </div>
+                      <div className="mt-2 text-sm text-slate/62">
+                        Source: {buildSourceLine(citation)}
+                      </div>
                       <p className="mt-3 text-sm leading-6 text-slate/78">{citation.excerpt}</p>
                     </div>
                   ))}
@@ -165,7 +162,6 @@ export function ReportPage({
 
         <footer className="mt-10 border-t border-stone/25 pt-6 text-sm leading-7 text-slate/68">
           <p>{report.dataHandling}</p>
-          <p className="mt-3">{report.provenanceSummary}</p>
           <p className="mt-3">
             Review-support prototype only. No diagnosis, treatment guidance, or approval
             recommendation is produced by this application.
@@ -207,4 +203,28 @@ function MetricCard({ label, value }: { label: string; value: string }) {
       <div className="mt-3 font-display text-3xl">{value}</div>
     </div>
   );
+}
+
+function buildSourceLine(citation: GetReportResponse["claims"][number]["citations"][number]) {
+  const label = citation.sourceLabel ?? citation.documentTitle ?? citation.rawRef;
+  const detail =
+    citation.documentTitle && citation.sourceLabel && citation.documentTitle !== citation.sourceLabel
+      ? ` (${citation.documentTitle})`
+      : "";
+
+  if (citation.sourceUrl) {
+    return (
+      <a
+        href={citation.sourceUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="text-terracotta underline decoration-terracotta/45 underline-offset-2 transition hover:text-oxidizedRose"
+      >
+        {label}
+        {detail}
+      </a>
+    );
+  }
+
+  return `${label}${detail}`;
 }

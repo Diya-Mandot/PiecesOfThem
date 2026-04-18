@@ -102,6 +102,40 @@ export class ProjectionRepository {
     return result.rows.map((row: unknown) => mapFragmentRow(row as Record<string, unknown>));
   }
 
+  async listAllFragments(): Promise<FragmentRow[]> {
+    const result = await this.pool.query(
+      `
+        SELECT
+          ef.external_id,
+          ef.case_id,
+          ef.source_document_id,
+          ef.fragment_date,
+          ef.source_type,
+          ef.modality,
+          ef.title,
+          ef.excerpt,
+          ef.tags_json,
+          ef.signal_domain,
+          ef.confidence,
+          ef.raw_ref,
+          ef.treatment_status,
+          COALESCE(ef.trial_program, ss.trial_program) AS trial_program,
+          sd.title AS document_title,
+          sd.source_url,
+          sd.fetched_at,
+          ss.seed_id,
+          ss.label AS seed_label,
+          NULLIF(ss.disease_subtype, '') AS disease_subtype
+        FROM ingestion.evidence_fragments ef
+        INNER JOIN ingestion.source_documents sd ON sd.id = ef.source_document_id
+        INNER JOIN ingestion.seed_sources ss ON ss.id = sd.seed_source_id
+        ORDER BY ef.fragment_date ASC, ef.external_id ASC
+      `,
+    );
+
+    return result.rows.map((row: unknown) => mapFragmentRow(row as Record<string, unknown>));
+  }
+
   async listCaseClaims(caseId: string): Promise<ClaimRow[]> {
     const result = await this.pool.query(
       `
@@ -126,6 +160,33 @@ export class ProjectionRepository {
         ORDER BY c.external_id ASC
       `,
       [caseId],
+    );
+
+    return result.rows.map((row: unknown) => mapClaimRow(row as Record<string, unknown>));
+  }
+
+  async listAllClaims(): Promise<ClaimRow[]> {
+    const result = await this.pool.query(
+      `
+        SELECT
+          c.external_id,
+          c.case_id,
+          c.statement,
+          c.signal_domain,
+          c.trend,
+          c.confidence,
+          c.treatment_status,
+          c.trial_program,
+          COALESCE(
+            array_agg(cf.fragment_external_id ORDER BY cf.fragment_order)
+              FILTER (WHERE cf.fragment_external_id IS NOT NULL),
+            ARRAY[]::text[]
+          ) AS fragment_ids
+        FROM ingestion.claims c
+        LEFT JOIN ingestion.claim_fragments cf ON cf.claim_id = c.id
+        GROUP BY c.id
+        ORDER BY c.external_id ASC
+      `,
     );
 
     return result.rows.map((row: unknown) => mapClaimRow(row as Record<string, unknown>));

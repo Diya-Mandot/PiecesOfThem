@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const DAYS_TO_DEADLINE = Math.ceil(
-  (new Date("2026-09-19").getTime() - Date.now()) / 86_400_000,
-);
+const INITIAL_COUNTDOWN = {
+  days: "--",
+  hours: "00",
+  minutes: "00",
+  seconds: "00",
+};
 
 const STEPS = [
   {
@@ -134,6 +137,8 @@ function SignalOrbs() {
 }
 
 export function LandingPage() {
+  const countdown = useCountdown();
+
   return (
     <main className="overflow-x-hidden" style={{
       background: "radial-gradient(ellipse at top, rgba(249,192,187,0.22) 0%, transparent 60%), linear-gradient(160deg, #FBF6F1 0%, #EDE3D4 100%)"
@@ -142,10 +147,6 @@ export function LandingPage() {
       {/* ── NAV ── */}
       <nav className="flex items-center justify-between px-8 py-5 lg:px-16">
         <span className="font-display text-xl tracking-[-0.02em] text-slate">PiecesOfThem</span>
-        <div className="flex items-center gap-6">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate/30 transition hover:text-slate/55 cursor-default">The Science</span>
-          <span className="text-xs uppercase tracking-[0.2em] text-slate/30 transition hover:text-slate/55 cursor-default">Regulatory Impact</span>
-        </div>
       </nav>
 
       {/* ── HERO ── */}
@@ -157,7 +158,7 @@ export function LandingPage() {
           <div className="mb-10 inline-flex items-center gap-2.5 rounded-full px-5 py-2.5 shadow-sm"
             style={{ background: "#F9C0BB" }}>
             <div className="h-2 w-2 animate-pulse rounded-full bg-white/80" />
-            <span className="text-sm font-semibold tracking-wide text-white">{DAYS_TO_DEADLINE} days to Sep 19, 2026</span>
+            <span className="text-sm font-semibold tracking-wide text-white">{countdown.days} days to Sep 19, 2026</span>
           </div>
 
           {/* Headline */}
@@ -231,7 +232,7 @@ export function LandingPage() {
             style={{ background: "radial-gradient(circle, #C4704A, transparent)" }} />
 
           <p className="mb-4 text-xs uppercase tracking-[0.3em] text-white/40">The deadline is real</p>
-          <BottomCountdown />
+          <BottomCountdown timeLeft={countdown} />
           <p className="font-newsreader mx-auto mt-5 max-w-md text-lg text-white/50" style={{ fontStyle: "italic" }}>
             UX111 wasn&apos;t rejected for safety. It was rejected for paperwork. Help us fix that.
           </p>
@@ -251,17 +252,7 @@ export function LandingPage() {
   );
 }
 
-function BottomCountdown() {
-  const [timeLeft, setTimeLeft] = useState(() => getCountdownParts());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setTimeLeft(getCountdownParts());
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
+function BottomCountdown({ timeLeft }: { timeLeft: CountdownParts }) {
   return (
     <div className="mt-8 flex flex-col items-center">
       <div className="text-center text-white">
@@ -286,6 +277,29 @@ function BottomCountdown() {
   );
 }
 
+type CountdownParts = {
+  days: string;
+  hours: string;
+  minutes: string;
+  seconds: string;
+};
+
+function useCountdown() {
+  const [timeLeft, setTimeLeft] = useState<CountdownParts>(INITIAL_COUNTDOWN);
+
+  useEffect(() => {
+    setTimeLeft(getCountdownParts());
+
+    const timer = window.setInterval(() => {
+      setTimeLeft(getCountdownParts());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return timeLeft;
+}
+
 function TimePill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-3 text-center backdrop-blur-sm">
@@ -297,7 +311,7 @@ function TimePill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getCountdownParts() {
+function getCountdownParts(): CountdownParts {
   const deadline = new Date("2026-09-19T23:59:59-06:00").getTime();
   const diff = Math.max(deadline - Date.now(), 0);
 
