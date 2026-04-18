@@ -43,6 +43,7 @@ export type ClaimRow = {
   fragment_ids: string[];
 };
 
+/** SQL read-model for the product-facing evidence explorer and report surfaces. */
 export class ProjectionRepository {
   constructor(private readonly pool: Pool) {}
 

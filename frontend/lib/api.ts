@@ -21,10 +21,12 @@ import {
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL ?? "http://127.0.0.1:4000";
 
+/** Build an absolute backend URL so SSR and route handlers resolve the same origin consistently. */
 function getBackendUrl(path: string) {
   return new URL(path, backendBaseUrl).toString();
 }
 
+/** Fetch a backend payload while converting 404/5xx into nullable UI states instead of hard failures. */
 async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | null> {
   let response: Response;
 
@@ -66,6 +68,7 @@ async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | nu
   return (await response.json()) as T;
 }
 
+/** Load the case/workbench bundle used by the dashboard view. */
 export async function getDashboardBundle(caseId: string): Promise<CaseBundle | null> {
   const encodedCaseId = encodeURIComponent(caseId);
   const [caseResponse, fragmentsResponse, claimsResponse] = await Promise.all([
@@ -94,6 +97,7 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
   return bundle;
 }
 
+/** Load the final evidence brief payload. This path intentionally stays DB-backed only. */
 export async function getReport(caseId: string): Promise<GetReportResponse | null> {
   const report = await fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
   return report;
@@ -104,6 +108,7 @@ export type WorkbenchData = {
   trajectory: GetTrajectoryResponse;
 };
 
+/** Load the combined dashboard bundle and derived trajectory payload for the workbench route. */
 export async function getWorkbenchData(caseId: string): Promise<WorkbenchData | null> {
   if (caseId === "demo-child-a") {
     const bundle = await getDashboardBundle(caseId);
@@ -134,6 +139,7 @@ export async function getWorkbenchData(caseId: string): Promise<WorkbenchData | 
   return { bundle, trajectory };
 }
 
+/** Merge the DB-backed demo route with the authored test bundle used to keep the workbench rich in local dev. */
 function mergeDemoBundle(primary: CaseBundle, synthetic: CaseBundle): CaseBundle {
   const mergedFragments = Array.from(
     new Map(
@@ -169,6 +175,7 @@ function mergeDemoBundle(primary: CaseBundle, synthetic: CaseBundle): CaseBundle
   };
 }
 
+/** Summarize provenance at the case level for UI badges and reviewer context. */
 function buildProvenanceSummary(fragments: EvidenceFragment[], claims: Claim[]) {
   const realFragments = fragments.filter((fragment) => fragment.provenance === "real").length;
   const syntheticFragments = fragments.filter((fragment) => fragment.provenance === "synthetic").length;
@@ -177,6 +184,7 @@ function buildProvenanceSummary(fragments: EvidenceFragment[], claims: Claim[]) 
   return `${realFragments} real fragment${realFragments === 1 ? "" : "s"}, ${syntheticFragments} synthetic fragment${syntheticFragments === 1 ? "" : "s"}, ${mixedClaims} mixed claim${mixedClaims === 1 ? "" : "s"}.`;
 }
 
+/** Collapse fragment/claim provenance into the single readiness label used by the UI. */
 function deriveReportReadiness(
   fragments: EvidenceFragment[],
   claims: Claim[],

@@ -215,7 +215,6 @@ Assigned phases:
 Owned files:
 - `shared/types.ts`
 - `shared/api.ts`
-- `frontend/lib/view-types.ts`
 
 ### Person 3: Backend-Only Phases
 
@@ -296,7 +295,6 @@ Primary responsibility:
 Primary files:
 - `shared/types.ts`
 - `shared/api.ts`
-- `frontend/lib/view-types.ts`
 
 AI / RAG guidance:
 - Retrieval logic must preserve time awareness.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+/** Fallback screen used when the backend has no projected data for a route yet. */
 export function DataUnavailable({
   title,
   body,

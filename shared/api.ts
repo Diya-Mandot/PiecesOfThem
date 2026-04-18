@@ -8,6 +8,7 @@ import type {
   TrajectoryPoint
 } from "./types";
 
+/** Product-facing API contracts shared between the Fastify backend and the Next.js frontend. */
 export type ErrorResponse = {
   error: string;
 };

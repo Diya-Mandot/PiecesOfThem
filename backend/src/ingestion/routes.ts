@@ -30,6 +30,7 @@ import type {
 import { badRequest, notFound, validateBooleanFilter, validateIntegerFilter } from "../validation.js";
 import type { IngestionService } from "./service.js";
 
+/** Register read-only ingestion/admin endpoints for inspecting raw and canonical pipeline records. */
 export async function registerIngestionRoutes(app: FastifyInstance, service: IngestionService) {
   app.get<{ Querystring: ListSeedSourcesQuery }>("/api/ingestion/seed-sources", async (request, reply) => {
     const namedPublicly = validateBooleanFilter(request.query.named_publicly);

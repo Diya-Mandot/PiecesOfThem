@@ -1,3 +1,4 @@
+/** Shared record shapes for the raw and canonical ingestion tables exposed through admin APIs. */
 export type SeedSourceKind = "public-source" | "trial-participant";
 
 export type SeedSourceAccess = "public";

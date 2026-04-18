@@ -2,6 +2,7 @@ import { DataUnavailable } from "@/components/data-unavailable";
 import { ReportPage } from "@/components/report-page";
 import { getReport } from "@/lib/api";
 
+/** Demo report route for the final evidence brief. */
 export default async function DemoReportPage({
   searchParams,
 }: {

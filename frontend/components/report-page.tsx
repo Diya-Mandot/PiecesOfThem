@@ -7,6 +7,7 @@ import type { GetReportResponse } from "@shared/api";
 
 import { formatDate } from "@/lib/format";
 
+/** Printable evidence brief view used for the final reviewer-facing package. */
 export function ReportPage({
   report,
   autoPrint = false,

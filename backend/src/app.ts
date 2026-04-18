@@ -8,6 +8,7 @@ import { ProjectionRepository } from "./projection-repository.js";
 import { registerRoutes } from "./routes.js";
 import { EvidenceService } from "./service.js";
 
+/** Build the Fastify app with both product-facing evidence routes and ingestion/admin routes. */
 export async function createApp() {
   const app = Fastify({ logger: false });
   const pool = createPool();

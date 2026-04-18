@@ -45,7 +45,6 @@ Owned phases:
 - Phase 7: AI / RAG Enhancement
 
 Owned files:
-- `frontend/lib/view-types.ts`
 - `shared/types.ts`
 - `shared/api.ts`
 

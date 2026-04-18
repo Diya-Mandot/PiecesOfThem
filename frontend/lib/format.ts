@@ -1,3 +1,4 @@
+/** Shared date helpers keep the landing/workbench/report screens visually consistent. */
 export function formatDate(date: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
