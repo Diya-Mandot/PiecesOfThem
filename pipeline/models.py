@@ -103,12 +103,17 @@ class ExtractedDatapoint(BaseModel):
     trial_program: StrictText | None = None
     confidence: Confidence
     evidence_quote: StrictText
+    supporting_chunk_ids: list[int]
     value: ExtractionValue
 
     @model_validator(mode="after")
     def _validate_datapoint_type_matches_value(self) -> "ExtractedDatapoint":
         if self.datapoint_type != self.value.kind:
             raise ValueError("datapoint_type must match value.kind")
+        if not self.supporting_chunk_ids:
+            raise ValueError("supporting_chunk_ids must not be empty")
+        if len(set(self.supporting_chunk_ids)) != len(self.supporting_chunk_ids):
+            raise ValueError("supporting_chunk_ids must be unique")
         return self
 
 
@@ -118,3 +123,26 @@ class ExtractionResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     datapoints: list[ExtractedDatapoint]
+
+
+class ExtractionDecision(BaseModel):
+    """Top-level extraction action returned by the model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["request_more_context", "submit_datapoints"]
+    reason: StrictText | None = None
+    requested_directions: list[Literal["left", "right"]] = []
+    datapoints: list[ExtractedDatapoint]
+
+    @model_validator(mode="after")
+    def _validate_action_payload(self) -> "ExtractionDecision":
+        if self.action == "request_more_context":
+            if not self.requested_directions:
+                raise ValueError("requested_directions must not be empty")
+            if self.datapoints:
+                raise ValueError("request_more_context must not include datapoints")
+        else:
+            if self.requested_directions:
+                raise ValueError("submit_datapoints must not request directions")
+        return self
