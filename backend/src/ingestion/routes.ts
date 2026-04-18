@@ -1,14 +1,20 @@
 import type { FastifyInstance } from "fastify";
 
 import type {
+  GetClaimResponse,
   GetDocumentChunkResponse,
+  GetEvidenceFragmentResponse,
   GetExtractedDatapointResponse,
   GetExtractionIssueResponse,
   GetExtractionRunResponse,
   GetSeedSourceResponse,
   GetSourceDocumentResponse,
+  ListClaimsQuery,
+  ListClaimsResponse,
   ListDocumentChunksQuery,
   ListDocumentChunksResponse,
+  ListEvidenceFragmentsQuery,
+  ListEvidenceFragmentsResponse,
   ListExtractedDatapointsQuery,
   ListExtractedDatapointsResponse,
   ListExtractionIssuesQuery,
@@ -145,6 +151,70 @@ export async function registerIngestionRoutes(app: FastifyInstance, service: Ing
     }
 
     return reply.send({ extraction_run: extractionRun } satisfies GetExtractionRunResponse);
+  });
+
+  app.get<{ Querystring: ListEvidenceFragmentsQuery }>("/api/ingestion/evidence-fragments", async (request, reply) => {
+    const sourceDocumentId = validateIntegerFilter(request.query.source_document_id);
+
+    if (sourceDocumentId === "invalid") {
+      return badRequest(reply, "Invalid source_document_id");
+    }
+
+    const response = await service.listEvidenceFragments({
+      source_document_id: sourceDocumentId,
+      case_id: request.query.case_id,
+      signal_domain: request.query.signal_domain,
+      confidence: request.query.confidence,
+      treatment_status: request.query.treatment_status,
+      trial_program: request.query.trial_program,
+    });
+
+    return reply.send(response satisfies ListEvidenceFragmentsResponse);
+  });
+
+  app.get<{ Params: { id: string } }>("/api/ingestion/evidence-fragments/:id", async (request, reply) => {
+    const id = validateIntegerFilter(request.params.id);
+
+    if (id === "invalid" || id === undefined) {
+      return badRequest(reply, "Invalid evidence fragment id");
+    }
+
+    const evidenceFragment = await service.getEvidenceFragment(id);
+
+    if (!evidenceFragment) {
+      return notFound(reply, "Evidence fragment not found");
+    }
+
+    return reply.send({ evidence_fragment: evidenceFragment } satisfies GetEvidenceFragmentResponse);
+  });
+
+  app.get<{ Querystring: ListClaimsQuery }>("/api/ingestion/claims", async (request, reply) => {
+    const response = await service.listClaims({
+      case_id: request.query.case_id,
+      signal_domain: request.query.signal_domain,
+      trend: request.query.trend,
+      confidence: request.query.confidence,
+      treatment_status: request.query.treatment_status,
+      trial_program: request.query.trial_program,
+    });
+
+    return reply.send(response satisfies ListClaimsResponse);
+  });
+
+  app.get<{ Params: { id: string } }>("/api/ingestion/claims/:id", async (request, reply) => {
+    const id = validateIntegerFilter(request.params.id);
+
+    if (id === "invalid" || id === undefined) {
+      return badRequest(reply, "Invalid claim id");
+    }
+
+    const claim = await service.getClaim(id);
+
+    if (!claim) {
+      return notFound(reply, "Claim not found");
+    }
+
+    return reply.send({ claim } satisfies GetClaimResponse);
   });
 
   app.get<{ Querystring: ListExtractedDatapointsQuery }>(

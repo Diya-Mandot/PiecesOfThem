@@ -12,7 +12,7 @@ Current API purpose:
 - project real ingestion data into frontend-facing read models
 - preserve citation lineage between claims and fragments
 - expose case, fragment, claim, and report payloads over HTTP
-- expose ingestion-schema-aligned records that mirror the PostgreSQL ingestion schema
+- expose ingestion-schema-aligned admin records from both canonical evidence tables and legacy pipeline tables
 
 ## General Notes
 
@@ -45,11 +45,15 @@ The backend currently exposes two API layers:
 1. App read-model endpoints
 - used by the frontend demo
 - shaped for the dashboard and evidence brief
+- projected from canonical evidence tables:
+  - `ingestion.evidence_fragments`
+  - `ingestion.claims`
+  - `ingestion.claim_fragments`
 
-2. Ingestion schema endpoints
+2. Ingestion/admin endpoints
 - shaped to match the ingestion schema coming from the pipeline work
-- intended to reduce drift between backend contracts and the database model
-- read directly from the ingestion database tables
+- intended for debugging, inspection, and reduced drift between backend contracts and the database model
+- include canonical evidence tables and legacy pipeline tables
 
 ## Health Check
 
@@ -336,17 +340,141 @@ Example error:
 }
 ```
 
-## Ingestion Schema API
+## Ingestion/Admin API
 
 These endpoints mirror the ingestion schema rather than the frontend read model.
 
-Current coverage:
+Canonical evidence coverage:
+- `ingestion.evidence_fragments`
+- `ingestion.claims`
+- `ingestion.claim_fragments`
+
+Legacy/debugging coverage:
 - `ingestion.seed_sources`
 - `ingestion.source_documents`
 - `ingestion.document_chunks`
 - `ingestion.extraction_runs`
 - `ingestion.extracted_datapoints`
 - `ingestion.extraction_issues`
+
+Important:
+- the product-facing app no longer projects from `ingestion.extracted_datapoints`
+- `ingestion.extracted_datapoints` remains a transitional/debugging surface
+- canonical product evidence now comes from `ingestion.evidence_fragments` and `ingestion.claims`
+
+### `GET /api/ingestion/evidence-fragments`
+
+What it does:
+- returns canonical evidence-fragment records
+- preserves chunk lineage through `chunk_ids`
+- supports filtering by source document, case, domain, confidence, treatment status, and trial program
+
+Supported query params:
+- `source_document_id`
+- `case_id`
+- `signal_domain`
+- `confidence`
+- `treatment_status`
+- `trial_program`
+
+Example:
+
+```bash
+curl "http://127.0.0.1:4000/api/ingestion/evidence-fragments?case_id=PSS-003"
+```
+
+Success response shape:
+
+```json
+{
+  "evidence_fragments": [
+    {
+      "id": 4,
+      "external_id": "FRG-1",
+      "case_id": "PSS-003",
+      "source_document_id": 20,
+      "fragment_date": "2025-11-27",
+      "source_type": "Parent Journal",
+      "modality": "text",
+      "title": "Language signal described by caregiver",
+      "excerpt": "He still says a few familiar words and sings along when prompted.",
+      "tags_json": ["vocabulary", "retained language"],
+      "signal_domain": "vocabulary",
+      "confidence": "high",
+      "raw_ref": "https://example.test/story#chunk-3",
+      "treatment_status": "unknown",
+      "treatment_basis": "seed_provenance",
+      "trial_program": null,
+      "intervention_class": null,
+      "chunk_ids": [3],
+      "created_at": "2026-04-18T00:00:00.000Z"
+    }
+  ],
+  "total_count": 1
+}
+```
+
+### `GET /api/ingestion/evidence-fragments/:id`
+
+What it does:
+- returns one canonical evidence-fragment record by numeric `id`
+
+Error cases:
+- `400` if the id is invalid
+- `404` if the evidence fragment is unknown
+
+### `GET /api/ingestion/claims`
+
+What it does:
+- returns canonical claim records
+- preserves fragment lineage through embedded `fragment_ids`
+- supports filtering by case, domain, trend, confidence, treatment status, and trial program
+
+Supported query params:
+- `case_id`
+- `signal_domain`
+- `trend`
+- `confidence`
+- `treatment_status`
+- `trial_program`
+
+Example:
+
+```bash
+curl "http://127.0.0.1:4000/api/ingestion/claims?case_id=PSS-003"
+```
+
+Success response shape:
+
+```json
+{
+  "claims": [
+    {
+      "id": 5,
+      "external_id": "CLM-1",
+      "case_id": "PSS-003",
+      "statement": "Language appears retained in family-reported observations.",
+      "signal_domain": "vocabulary",
+      "trend": "stable",
+      "confidence": "high",
+      "treatment_status": "unknown",
+      "trial_program": null,
+      "fragment_ids": ["FRG-1", "FRG-2"],
+      "created_at": "2026-04-18T00:00:00.000Z"
+    }
+  ],
+  "total_count": 1
+}
+```
+
+### `GET /api/ingestion/claims/:id`
+
+What it does:
+- returns one canonical claim record by numeric `id`
+
+Error cases:
+- `400` if the id is invalid
+- `404` if the claim is unknown
 
 ### `GET /api/ingestion/seed-sources`
 
@@ -572,7 +700,9 @@ The ingestion/admin API also returns schema-aligned records for:
 - `SourceDocumentRecord`
 - `DocumentChunkRecord`
 - `ExtractionRunRecord`
-- `ExtractedDatapointRecord`
+- `EvidenceFragmentRecord`
+- `ClaimRecord`
+- `ExtractedDatapointRecord` (legacy/debugging)
 - `ExtractionIssueRecord`
 
 ## Current Frontend Usage

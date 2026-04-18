@@ -1,5 +1,7 @@
 import type {
+  ClaimRecord,
   DocumentChunkRecord,
+  EvidenceFragmentRecord,
   ExtractedDatapointRecord,
   ExtractionIssueRecord,
   ExtractionRunRecord,
@@ -67,6 +69,40 @@ export type ListExtractionRunsResponse = {
 
 export type GetExtractionRunResponse = {
   extraction_run: ExtractionRunRecord;
+};
+
+export type ListEvidenceFragmentsQuery = {
+  source_document_id?: string;
+  case_id?: string;
+  signal_domain?: string;
+  confidence?: string;
+  treatment_status?: string;
+  trial_program?: string;
+};
+
+export type ListEvidenceFragmentsResponse = {
+  evidence_fragments: EvidenceFragmentRecord[];
+} & PaginationMeta;
+
+export type GetEvidenceFragmentResponse = {
+  evidence_fragment: EvidenceFragmentRecord;
+};
+
+export type ListClaimsQuery = {
+  case_id?: string;
+  signal_domain?: string;
+  trend?: string;
+  confidence?: string;
+  treatment_status?: string;
+  trial_program?: string;
+};
+
+export type ListClaimsResponse = {
+  claims: ClaimRecord[];
+} & PaginationMeta;
+
+export type GetClaimResponse = {
+  claim: ClaimRecord;
 };
 
 export type ListExtractedDatapointsQuery = {

@@ -113,3 +113,121 @@ test("GET /api/chart/trajectory/:caseId returns chart data from canonical fragme
   const payload = response.json();
   assert.equal(payload.trajectoryPoints.length, 2);
 });
+
+test("GET /api/ingestion/evidence-fragments returns canonical evidence records", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/evidence-fragments",
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = response.json();
+  assert.equal(payload.total_count, 2);
+  assert.ok(Array.isArray(payload.evidence_fragments));
+  assert.ok(payload.evidence_fragments.every((fragment: { external_id: string }) => fragment.external_id.startsWith("FRG-")));
+});
+
+test("GET /api/ingestion/evidence-fragments/:id returns a canonical evidence record with chunk lineage", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const listResponse = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/evidence-fragments",
+  });
+
+  const listPayload = listResponse.json();
+  const firstFragmentId = listPayload.evidence_fragments[0].id;
+
+  const response = await app.inject({
+    method: "GET",
+    url: `/api/ingestion/evidence-fragments/${firstFragmentId}`,
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = response.json();
+  assert.equal(payload.evidence_fragment.id, firstFragmentId);
+  assert.ok(Array.isArray(payload.evidence_fragment.chunk_ids));
+});
+
+test("GET /api/ingestion/evidence-fragments/:id returns 404 for an unknown canonical evidence record", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/evidence-fragments/999999",
+  });
+
+  assert.equal(response.statusCode, 404);
+});
+
+test("GET /api/ingestion/claims returns canonical claim records with fragment lineage", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/claims",
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = response.json();
+  assert.equal(payload.total_count, 1);
+  assert.ok(Array.isArray(payload.claims));
+  assert.ok(Array.isArray(payload.claims[0].fragment_ids));
+});
+
+test("GET /api/ingestion/claims/:id returns a canonical claim record", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const listResponse = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/claims",
+  });
+
+  const listPayload = listResponse.json();
+  const firstClaimId = listPayload.claims[0].id;
+
+  const response = await app.inject({
+    method: "GET",
+    url: `/api/ingestion/claims/${firstClaimId}`,
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = response.json();
+  assert.equal(payload.claim.id, firstClaimId);
+  assert.ok(Array.isArray(payload.claim.fragment_ids));
+});
+
+test("GET /api/ingestion/claims/:id returns 404 for an unknown canonical claim record", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/ingestion/claims/999999",
+  });
+
+  assert.equal(response.statusCode, 404);
+});

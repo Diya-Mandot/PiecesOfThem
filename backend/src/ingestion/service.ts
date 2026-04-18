@@ -1,5 +1,7 @@
 import type {
+  ListClaimsResponse,
   ListDocumentChunksResponse,
+  ListEvidenceFragmentsResponse,
   ListExtractedDatapointsResponse,
   ListExtractionIssuesResponse,
   ListExtractionRunsResponse,
@@ -81,6 +83,54 @@ export class IngestionService {
 
   async getExtractionRun(id: number) {
     return this.repository.getExtractionRun(id);
+  }
+
+  async listEvidenceFragments(filters: {
+    source_document_id?: number;
+    case_id?: string;
+    signal_domain?: string;
+    confidence?: string;
+    treatment_status?: string;
+    trial_program?: string;
+  }): Promise<ListEvidenceFragmentsResponse> {
+    const evidenceFragments = await this.repository.listEvidenceFragments([
+      ["source_document_id", filters.source_document_id],
+      ["case_id", filters.case_id],
+      ["signal_domain", filters.signal_domain],
+      ["confidence", filters.confidence],
+      ["treatment_status", filters.treatment_status],
+      ["trial_program", filters.trial_program],
+    ]);
+
+    return { evidence_fragments: evidenceFragments, total_count: evidenceFragments.length };
+  }
+
+  async getEvidenceFragment(id: number) {
+    return this.repository.getEvidenceFragment(id);
+  }
+
+  async listClaims(filters: {
+    case_id?: string;
+    signal_domain?: string;
+    trend?: string;
+    confidence?: string;
+    treatment_status?: string;
+    trial_program?: string;
+  }): Promise<ListClaimsResponse> {
+    const claims = await this.repository.listClaims([
+      ["case_id", filters.case_id],
+      ["signal_domain", filters.signal_domain],
+      ["trend", filters.trend],
+      ["confidence", filters.confidence],
+      ["treatment_status", filters.treatment_status],
+      ["trial_program", filters.trial_program],
+    ]);
+
+    return { claims, total_count: claims.length };
+  }
+
+  async getClaim(id: number) {
+    return this.repository.getClaim(id);
   }
 
   async listExtractedDatapoints(filters: {
