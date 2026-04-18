@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { GetReportResponse } from "@shared/api";
 
 import { formatDate } from "@/lib/format";
@@ -6,6 +8,33 @@ export function ReportPage({ report }: { report: GetReportResponse }) {
   return (
     <main className="min-h-screen bg-ivory px-5 py-8 text-slate sm:px-8 lg:px-10">
       <div className="mx-auto max-w-5xl rounded-[2.2rem] border border-stone/30 bg-white p-8 shadow-paper sm:p-10">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-stone/20 pb-6">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="font-display text-xl tracking-[-0.02em] text-slate transition hover:text-terracotta"
+            >
+              PiecesOfThem
+            </Link>
+            <span className="h-3.5 w-px bg-stone/35" />
+            <span className="text-xs uppercase tracking-[0.22em] text-slate/42">Evidence Brief</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/"
+              className="rounded-full border border-stone/30 bg-white px-4 py-2 text-sm font-medium text-slate transition hover:border-stone/50"
+            >
+              Home
+            </Link>
+            <Link
+              href="/case/demo-child-a"
+              className="rounded-full bg-slate px-4 py-2 text-sm font-medium text-white transition hover:bg-rosewood"
+            >
+              Back to Workbench
+            </Link>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-8 border-b border-stone/25 pb-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-rosewood/75">
