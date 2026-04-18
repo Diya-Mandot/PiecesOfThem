@@ -7,25 +7,33 @@ import type {
 } from "@shared/api";
 import type { CaseBundle } from "@shared/types";
 
-const backendBaseUrl = process.env.BACKEND_BASE_URL;
+import {
+  demoFallbackBundle,
+  demoFallbackReport,
+  demoFallbackTrajectory,
+} from "@/lib/demo-fallback";
+
+const backendBaseUrl = process.env.BACKEND_BASE_URL ?? "http://127.0.0.1:4000";
 
 function getBackendUrl(path: string) {
-  if (!backendBaseUrl) {
-    throw new Error("Missing BACKEND_BASE_URL");
-  }
-
   return new URL(path, backendBaseUrl).toString();
 }
 
 async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | null> {
-  const response = await fetch(getBackendUrl(path), {
-    ...init,
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(getBackendUrl(path), {
+      ...init,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {})
+      }
+    });
+  } catch {
+    return null;
+  }
 
   if (response.status === 404) {
     return null;
@@ -59,7 +67,7 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
   ]);
 
   if (!caseResponse || !fragmentsResponse || !claimsResponse) {
-    return null;
+    return caseId === "demo-child-a" ? demoFallbackBundle : null;
   }
 
   return {
@@ -70,7 +78,12 @@ export async function getDashboardBundle(caseId: string): Promise<CaseBundle | n
 }
 
 export async function getReport(caseId: string): Promise<GetReportResponse | null> {
-  return fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
+  const report = await fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
+  if (!report && caseId === "demo-child-a") {
+    return demoFallbackReport;
+  }
+
+  return report;
 }
 
 export type WorkbenchData = {
@@ -86,6 +99,13 @@ export async function getWorkbenchData(caseId: string): Promise<WorkbenchData | 
   ]);
 
   if (!bundle || !trajectory) {
+    if (caseId === "demo-child-a") {
+      return {
+        bundle: demoFallbackBundle,
+        trajectory: demoFallbackTrajectory,
+      };
+    }
+
     return null;
   }
 
