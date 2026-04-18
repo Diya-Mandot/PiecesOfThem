@@ -64,15 +64,16 @@ def main() -> None:
         return
 
     if args.command == "extract":
-        from pipeline.extract import run_extraction
+        from pipeline.extract import run_extraction, synthesize_claims
 
         chunk_pending_documents(config)
-        count = run_extraction(config)
-        print(f"datapoints={count}")
+        fragment_count = run_extraction(config)
+        claim_count = synthesize_claims(config)
+        print(f"fragments={fragment_count} claims={claim_count}")
         return
 
     if args.command == "run-all":
-        from pipeline.extract import run_extraction
+        from pipeline.extract import run_extraction, synthesize_claims
         from pipeline.scrape import scrape_seed_sources
 
         ensure_database(config)
@@ -80,8 +81,9 @@ def main() -> None:
         sync_seed_catalog(config)
         scrape_seed_sources(config)
         chunk_pending_documents(config)
-        datapoints = run_extraction(config)
-        print(f"run-all-complete datapoints={datapoints}")
+        fragments = run_extraction(config)
+        claims = synthesize_claims(config)
+        print(f"run-all-complete fragments={fragments} claims={claims}")
         return
 
 

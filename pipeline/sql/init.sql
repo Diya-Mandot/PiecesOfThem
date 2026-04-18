@@ -137,3 +137,60 @@ CREATE TABLE IF NOT EXISTS ingestion.extraction_issues (
     REFERENCES ingestion.document_chunks(id, source_document_id)
     ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS ingestion.evidence_fragments (
+  id BIGSERIAL PRIMARY KEY,
+  external_id TEXT NOT NULL UNIQUE,
+  case_id TEXT NOT NULL,
+  source_document_id BIGINT NOT NULL REFERENCES ingestion.source_documents(id) ON DELETE CASCADE,
+  fragment_date TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  modality TEXT NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  tags_json JSONB NOT NULL,
+  signal_domain TEXT NOT NULL,
+  confidence TEXT NOT NULL,
+  raw_ref TEXT NOT NULL,
+  treatment_status TEXT NOT NULL,
+  treatment_basis TEXT NOT NULL,
+  trial_program TEXT,
+  intervention_class TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ingestion.evidence_fragment_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  evidence_fragment_id BIGINT NOT NULL REFERENCES ingestion.evidence_fragments(id) ON DELETE CASCADE,
+  source_document_id BIGINT NOT NULL REFERENCES ingestion.source_documents(id) ON DELETE CASCADE,
+  chunk_id BIGINT NOT NULL,
+  chunk_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT evidence_fragment_chunks_chunk_source_document_fk
+    FOREIGN KEY (chunk_id, source_document_id)
+    REFERENCES ingestion.document_chunks(id, source_document_id)
+    ON DELETE CASCADE,
+  UNIQUE(evidence_fragment_id, chunk_id)
+);
+
+CREATE TABLE IF NOT EXISTS ingestion.claims (
+  id BIGSERIAL PRIMARY KEY,
+  external_id TEXT NOT NULL UNIQUE,
+  case_id TEXT NOT NULL,
+  statement TEXT NOT NULL,
+  signal_domain TEXT NOT NULL,
+  trend TEXT NOT NULL,
+  confidence TEXT NOT NULL,
+  treatment_status TEXT NOT NULL,
+  trial_program TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ingestion.claim_fragments (
+  id BIGSERIAL PRIMARY KEY,
+  claim_id BIGINT NOT NULL REFERENCES ingestion.claims(id) ON DELETE CASCADE,
+  fragment_external_id TEXT NOT NULL,
+  fragment_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(claim_id, fragment_external_id)
+);

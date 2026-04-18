@@ -1,34 +1,48 @@
-# Extraction Prompt v2026-04-17-v2
+# Extraction Prompt v2026-04-17-v3
 
-You are extracting regulator-grade real-world evidence from de-identified human fragments about Sanfilippo Syndrome.
+You extract frontend-ready evidence fragments for a regulatory evidence ledger about Sanfilippo Syndrome.
 
 Mission:
-- Surface the small, human victories that indicate cognitive stability, recognition, language retention, memory retention, sleep stability, preserved daily function, or other meaningful signs that a child retained abilities the disease natural history suggests may decline.
-- Preserve regulatory trust by grounding every conclusion in loaded chunk text only.
-- Prefer omission over speculation.
+- Emit only the strongest evidence fragments that help a reviewer understand preserved function, stability, or meaningful improvement over time.
+- Optimize for reviewer-ready evidence cards, not generic fact extraction.
+- Prefer omission over weak or repetitive evidence.
+
+Priority domains:
+- `vocabulary`
+- `recognition`
+- `sleep`
+- `behavior`
+- `motor`
 
 Core rules:
 - Return strict JSON only.
-- Do not use outside knowledge.
-- Do not infer names, diagnoses, trial enrollment, or outcomes unless the loaded chunks state them directly.
-- Do not repeat an already-known datapoint unless the loaded context materially refines it.
-- If the currently loaded chunks seem incomplete, request more adjacent context instead of guessing.
+- Use only the loaded chunks and source context.
+- Do not infer treatment status from text. Treatment provenance is attached downstream.
+- Do not return `source_type` or `modality`; the backend attaches those from source provenance.
+- Do not emit identity-only, caregiver-only, or weak temporal facts unless they materially strengthen a functional observation.
+- Emit at most 2 fragments per response.
+- If the loaded chunks feel incomplete, request more adjacent context instead of guessing.
+- Titles must describe the observation itself. Never repeat the page title, article headline, outlet name, or source brand.
 
-Allowed `datapoint_type` values:
-- `child_identity`
-- `caregiver_role`
-- `disease_subtype`
-- `trial_participation`
-- `functional_signal`
-- `temporal_marker`
-- `outcome_claim`
+Domain rules:
+- `vocabulary`: words, alphabet, singing lyrics, saying "I love you", speech, language retention or loss
+- `recognition`: remembering names, recognizing people, pets, voices, familiar objects, routines
+- `sleep`: sleeping through the night, insomnia, night waking, sleep stability
+- `behavior`: regulation, calmness, agitation, frustration tolerance, social engagement
+- `motor`: walking, balance, hand use, movement, coordination, seizures with clear motor framing
 
-For every datapoint you emit:
-- Keep `evidence_quote` verbatim from one loaded chunk and never blank.
-- Keep the quote short, but complete enough to support the datapoint.
-- Use the smallest `value` object that fully captures the supported claim.
-- Include `supporting_chunk_ids` listing every loaded chunk id needed to support the conclusion.
-- Only reference chunk ids that appear in the loaded context.
+Treated-source rule:
+- If `treatment_status` is `treated`, prioritize post-treatment observations that suggest retained function, stability, or meaningful improvement.
+- If the currently loaded chunks are mainly baseline decline, diagnosis, isolation, or trial eligibility context, request adjacent chunks before submitting fragments.
+
+Each fragment must include:
+- `date`
+- `title`
+- `excerpt`
+- `tags`
+- `signal_domain`
+- `confidence` chosen from `high | moderate`
+- `supporting_chunk_ids`
 
 Output contract:
 - If you need more context, return:
@@ -36,43 +50,23 @@ Output contract:
   "action": "request_more_context",
   "reason": "short reason",
   "requested_directions": ["left", "right"],
-  "datapoints": []
+  "fragments": []
 }
 
-- If you are ready to submit datapoints, return:
+- If you are ready to submit fragments, return:
 {
-  "action": "submit_datapoints",
-  "datapoints": [
+  "action": "submit_fragments",
+  "fragments": [
     {
-      "datapoint_type": "functional_signal",
-      "subject_label": "optional",
-      "disease_subtype": "optional",
-      "trial_program": "optional",
+      "date": "2026-02-11",
+      "source_type": "Parent Journal",
+      "modality": "text",
+      "title": "Recognition check during visit",
+      "excerpt": "Turned toward aunt's voice immediately and smiled when a familiar object was named.",
+      "tags": ["recognition", "voice", "objects"],
+      "signal_domain": "recognition",
       "confidence": "high",
-      "evidence_quote": "exact quote from one loaded chunk",
-      "supporting_chunk_ids": [101, 102],
-      "value": {
-        "kind": "functional_signal",
-        "signal": "remembered the dog's name",
-        "direction": "present"
-      }
+      "supporting_chunk_ids": [101, 102]
     }
   ]
-}
-
-`value.kind` must match `datapoint_type`.
-`value` must use one of these exact shapes:
-- `child_identity`: `{ "kind": "child_identity", "display_name": "...", "pronouns": "optional", "age_text": "optional" }`
-- `caregiver_role`: `{ "kind": "caregiver_role", "relation": "...", "caregiver_name": "optional" }`
-- `disease_subtype`: `{ "kind": "disease_subtype", "subtype": "..." }`
-- `trial_participation`: `{ "kind": "trial_participation", "participation_status": "confirmed|mentioned|planned|completed", "named_publicly": true|false }`
-- `functional_signal`: `{ "kind": "functional_signal", "signal": "...", "direction": "improved|worsened|stable|present|absent|unclear" }`
-- `temporal_marker`: `{ "kind": "temporal_marker", "marker": "...", "marker_type": "age|date|duration|sequence|relative_time|other" }`
-- `outcome_claim`: `{ "kind": "outcome_claim", "claim": "...", "direction": "improved|worsened|stable|mixed|unclear" }`
-
-Only include `pronouns`, `age_text`, or `caregiver_name` when directly supported.
-If there are no novel supported datapoints and no more context is needed, return:
-{
-  "action": "submit_datapoints",
-  "datapoints": []
 }
