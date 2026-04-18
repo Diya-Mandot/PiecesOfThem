@@ -1,0 +1,93 @@
+import type {
+  GetCaseResponse,
+  GetFragmentsResponse,
+  GetReportResponse,
+  GetTrajectoryResponse,
+  PostClaimsResponse
+} from "@shared/api";
+import type { CaseBundle } from "@shared/types";
+
+const backendBaseUrl = process.env.BACKEND_BASE_URL;
+
+function getBackendUrl(path: string) {
+  if (!backendBaseUrl) {
+    throw new Error("Missing BACKEND_BASE_URL");
+  }
+
+  return new URL(path, backendBaseUrl).toString();
+}
+
+async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | null> {
+  const response = await fetch(getBackendUrl(path), {
+    ...init,
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {})
+    }
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    let details = response.statusText;
+
+    try {
+      const body = (await response.json()) as { error?: string };
+      details = body.error ?? details;
+    } catch {
+      // Keep the fallback status text when the response is not JSON.
+    }
+
+    throw new Error(`Backend request failed: ${details}`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function getDashboardBundle(caseId: string): Promise<CaseBundle | null> {
+  const encodedCaseId = encodeURIComponent(caseId);
+  const [caseResponse, fragmentsResponse, claimsResponse] = await Promise.all([
+    fetchBackend<GetCaseResponse>(`/api/cases/${encodedCaseId}`),
+    fetchBackend<GetFragmentsResponse>(`/api/fragments?caseId=${encodedCaseId}`),
+    fetchBackend<PostClaimsResponse>(`/api/claims`, {
+      method: "POST",
+      body: JSON.stringify({ caseId })
+    })
+  ]);
+
+  if (!caseResponse || !fragmentsResponse || !claimsResponse) {
+    return null;
+  }
+
+  return {
+    caseRecord: caseResponse.caseRecord,
+    fragments: fragmentsResponse.fragments,
+    claims: claimsResponse.claims
+  };
+}
+
+export async function getReport(caseId: string): Promise<GetReportResponse | null> {
+  return fetchBackend<GetReportResponse>(`/api/report/${encodeURIComponent(caseId)}`);
+}
+
+export type WorkbenchData = {
+  bundle: CaseBundle;
+  trajectory: GetTrajectoryResponse;
+};
+
+export async function getWorkbenchData(caseId: string): Promise<WorkbenchData | null> {
+  const encodedCaseId = encodeURIComponent(caseId);
+  const [bundle, trajectory] = await Promise.all([
+    getDashboardBundle(caseId),
+    fetchBackend<GetTrajectoryResponse>(`/api/chart/trajectory/${encodedCaseId}`),
+  ]);
+
+  if (!bundle || !trajectory) {
+    return null;
+  }
+
+  return { bundle, trajectory };
+}
