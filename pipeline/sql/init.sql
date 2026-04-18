@@ -83,9 +83,9 @@ CREATE TABLE IF NOT EXISTS ingestion.extracted_datapoints (
   id BIGSERIAL PRIMARY KEY,
   extraction_run_id BIGINT NOT NULL,
   source_document_id BIGINT NOT NULL REFERENCES ingestion.source_documents(id) ON DELETE CASCADE,
-  chunk_id BIGINT NOT NULL,
   datapoint_type TEXT NOT NULL,
   schema_version TEXT NOT NULL,
+  dedupe_key TEXT NOT NULL,
   subject_label TEXT,
   disease_subtype TEXT,
   trial_program TEXT,
@@ -98,11 +98,25 @@ CREATE TABLE IF NOT EXISTS ingestion.extracted_datapoints (
   CONSTRAINT extracted_datapoints_extraction_run_source_document_fk
     FOREIGN KEY (extraction_run_id, source_document_id)
     REFERENCES ingestion.extraction_runs(id, source_document_id)
-    ON DELETE CASCADE,
-  CONSTRAINT extracted_datapoints_chunk_source_document_fk
+    ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS extracted_datapoints_source_document_dedupe_key_uq
+  ON ingestion.extracted_datapoints (source_document_id, dedupe_key);
+
+CREATE TABLE IF NOT EXISTS ingestion.extracted_datapoint_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  extracted_datapoint_id BIGINT NOT NULL REFERENCES ingestion.extracted_datapoints(id) ON DELETE CASCADE,
+  source_document_id BIGINT NOT NULL REFERENCES ingestion.source_documents(id) ON DELETE CASCADE,
+  chunk_id BIGINT NOT NULL,
+  evidence_role TEXT NOT NULL DEFAULT 'supporting',
+  chunk_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT extracted_datapoint_chunks_chunk_source_document_fk
     FOREIGN KEY (chunk_id, source_document_id)
     REFERENCES ingestion.document_chunks(id, source_document_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  UNIQUE(extracted_datapoint_id, chunk_id)
 );
 
 CREATE TABLE IF NOT EXISTS ingestion.extraction_issues (
