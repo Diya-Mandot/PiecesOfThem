@@ -9,6 +9,7 @@ import type {
   SourceDocumentRecord
 } from "./ingestion";
 
+/** Shared ingestion/admin API contracts for inspecting raw pipeline tables. */
 type PaginationMeta = {
   total_count: number;
 };

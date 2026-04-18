@@ -1,4 +1,4 @@
-import type { GetReportResponse, GetTrajectoryResponse } from "@shared/api";
+import type { GetTrajectoryResponse } from "@shared/api";
 import type {
   CaseBundle,
   Claim,
@@ -467,23 +467,6 @@ export const demoFallbackBundle: CaseBundle = annotateDemoBundle(rawDemoFallback
 export const demoFallbackTrajectory: GetTrajectoryResponse = {
   trajectoryPoints,
   kpis,
-};
-
-export const demoFallbackReport: GetReportResponse = {
-  ...demoFallbackBundle.caseRecord,
-  metrics: {
-    fragmentCount: demoFallbackBundle.fragments.length,
-    claimCount: demoFallbackBundle.claims.length,
-    modalities: Array.from(new Set(demoFallbackBundle.fragments.map((fragment) => fragment.sourceType))).length,
-    domains: Array.from(new Set(demoFallbackBundle.fragments.map((fragment) => fragment.signalDomain))).length,
-    realFragments: demoFallbackBundle.fragments.filter((fragment) => fragment.provenance === "real").length,
-    syntheticFragments: demoFallbackBundle.fragments.filter((fragment) => fragment.provenance === "synthetic").length,
-    mixedClaims: demoFallbackBundle.claims.filter((claim) => claim.provenance === "mixed").length,
-  },
-  claims: demoFallbackBundle.claims.map((claim) => ({
-    ...claim,
-    citations: demoFallbackBundle.fragments.filter((fragment) => claim.fragmentIds.includes(fragment.id)),
-  })),
 };
 
 function annotateDemoBundle(bundle: RawCaseBundle): CaseBundle {

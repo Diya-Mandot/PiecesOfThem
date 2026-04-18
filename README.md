@@ -40,7 +40,6 @@ This repo is split into three strict ownership lanes. No one should edit another
 - Branch: `feat/ai-rag-core`
 - Start with: Phase 1, then Phase 2, then Phase 7
 - Owns:
-  - `frontend/lib/view-types.ts`
   - `shared/types.ts`
   - `shared/api.ts`
   - pipeline-side extraction/schema logic as coordinated

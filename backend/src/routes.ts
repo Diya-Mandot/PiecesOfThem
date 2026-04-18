@@ -12,6 +12,7 @@ import type {
 import type { EvidenceService } from "./service.js";
 import { badRequest, notFound, validateSignalDomain, validateYear } from "./validation.js";
 
+/** Register the product-facing workbench/report/chart routes consumed by the Next.js app. */
 export async function registerRoutes(app: FastifyInstance, service: EvidenceService) {
   app.get<{ Params: { caseId: string } }>("/api/cases/:caseId", async (request, reply) => {
     const response = await service.getCaseResponse(request.params.caseId);

@@ -1,3 +1,4 @@
+/** Shared frontend/backend domain model for the evidence workbench and report UI. */
 export type SignalDomain =
   | "vocabulary"
   | "recognition"

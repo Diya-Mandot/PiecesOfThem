@@ -1,9 +1,11 @@
 import { config as loadEnv } from "dotenv";
 import { resolve } from "node:path";
 
+// Load the backend-local env file first, then fall back to the repo-root .env used by the pipeline/frontend.
 loadEnv({ path: resolve(process.cwd(), ".env") });
 loadEnv({ path: resolve(process.cwd(), "../.env"), override: false });
 
+/** Resolve a required environment variable while still allowing a local default for development. */
 function requireEnv(name: string, fallback?: string) {
   const value = process.env[name] ?? fallback;
 
@@ -14,6 +16,7 @@ function requireEnv(name: string, fallback?: string) {
   return value;
 }
 
+/** Centralized runtime configuration for the Fastify server and Postgres connection pool. */
 export const backendConfig = {
   host: process.env.HOST ?? "127.0.0.1",
   port: Number(process.env.PORT ?? "4000"),

@@ -136,6 +136,7 @@ function SignalOrbs() {
   );
 }
 
+/** Editorial landing page and top-level CTA surface for the demo routes. */
 export function LandingPage() {
   const countdown = useCountdown();
 

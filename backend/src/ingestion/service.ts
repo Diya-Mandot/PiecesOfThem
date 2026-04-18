@@ -11,6 +11,7 @@ import type {
 
 import type { IngestionRepository } from "./repository.js";
 
+/** Thin orchestration layer that normalizes repository output into API response envelopes. */
 export class IngestionService {
   constructor(private readonly repository: IngestionRepository) {}
 

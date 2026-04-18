@@ -1,6 +1,7 @@
 import { createApp } from "./app.js";
 import { backendConfig } from "./config.js";
 
+/** Start the HTTP server and surface startup failures through Fastify's logger. */
 async function start() {
   const app = await createApp();
 

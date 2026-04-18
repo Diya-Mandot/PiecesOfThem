@@ -30,7 +30,6 @@ Owns:
 - Owner: AI / RAG
 
 Owns:
-- `frontend/lib/view-types.ts`
 - `shared/types.ts`
 - `shared/api.ts`
 

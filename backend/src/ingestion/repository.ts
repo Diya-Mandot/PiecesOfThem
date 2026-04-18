@@ -13,6 +13,7 @@ import type {
 
 type QueryFilters = Array<[column: string, value: unknown | undefined]>;
 
+/** Direct SQL access layer for ingestion/admin tables. */
 export class IngestionRepository {
   constructor(private readonly pool: Pool) {}
 

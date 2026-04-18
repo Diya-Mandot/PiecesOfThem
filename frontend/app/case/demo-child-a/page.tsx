@@ -2,6 +2,7 @@ import { DataUnavailable } from "@/components/data-unavailable";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getWorkbenchData } from "@/lib/api";
 
+/** Demo workbench route that resolves to the current backend-backed evidence set. */
 export default async function DemoCasePage() {
   const workbench = await getWorkbenchData("demo-child-a");
 

@@ -55,6 +55,7 @@ const DAYS_TO_DEADLINE = Math.ceil(
   (new Date("2026-09-19").getTime() - Date.now()) / 86_400_000,
 );
 
+/** Main evidence workbench shell that combines search, timeline review, and fragment inspection. */
 export function DashboardShell({
   bundle,
   trajectory,
@@ -513,6 +514,7 @@ function PieceCard({
   );
 }
 
+/** Pick the hero quote shown at the top of the workbench. */
 function pickHeroFragment(fragments: EvidenceFragment[]) {
   const preferred = fragments.find((fragment) => fragment.id === "FRG-2025-188");
   if (preferred) {

@@ -31,6 +31,7 @@ const domainKeywords: Record<SignalDomain, string[]> = {
 const defaultDataHandling =
   "Projected from canonical evidence fragments and claims in the ingestion layer. Review support only; not a diagnosis, treatment recommendation, or approval recommendation.";
 
+/** Maps canonical evidence rows into the UI contracts used by the workbench, report, and trajectory views. */
 export class EvidenceService {
   constructor(private readonly repository: ProjectionRepository) {}
 
