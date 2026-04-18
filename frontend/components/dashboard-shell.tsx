@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { GetTrajectoryResponse } from "@shared/api";
-import type { CaseBundle, EvidenceFragment, SignalDomain } from "@shared/types";
+import type { CaseBundle, EvidenceFragment, ReportReadiness, SignalDomain } from "@shared/types";
 
 import { RescueGapChart } from "@/components/rescue-gap-chart";
 import { formatMonthYear } from "@/lib/format";
@@ -125,20 +125,29 @@ export function DashboardShell({
   );
 
   const filtered = useMemo(() => {
-    if (!rankedIds) {
-      return domainFiltered;
-    }
+    const base = (() => {
+      if (!rankedIds) {
+        return domainFiltered;
+      }
 
-    const byId = new Map(domainFiltered.map((fragment) => [fragment.id, fragment]));
+      const byId = new Map(domainFiltered.map((fragment) => [fragment.id, fragment]));
 
-    return rankedIds
-      .map((id) => byId.get(id))
-      .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
+      return rankedIds
+        .map((id) => byId.get(id))
+        .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
+    })();
+
+    return [...base].sort((a, b) => {
+      const aReal = a.provenance === "real" ? 0 : 1;
+      const bReal = b.provenance === "real" ? 0 : 1;
+      return aReal - bReal;
+    });
   }, [domainFiltered, rankedIds]);
 
   const activeSearch = searchQuery.trim();
   const activeDomainLabel = filterMode === "all" ? "All domains" : DOMAIN_LABEL[filterMode];
   const searchMode = activeSearch.length > 0;
+  const reportReadiness = bundle.caseRecord.reportReadiness;
 
   function selectPiece(id: string) {
     setSelectedId((previous) => (previous === id ? null : id));
@@ -181,7 +190,7 @@ export function DashboardShell({
               >
                 Home
               </Link>
-              <GenerateButton />
+              <GenerateButton readiness={reportReadiness} />
             </nav>
           </div>
         </div>
@@ -318,6 +327,7 @@ export function DashboardShell({
             {!searching && filtered[0] && searchMode ? (
               <StatusChip label={`Top match: ${filtered[0].title}`} tone="soft" />
             ) : null}
+            <StatusChip label={readinessLabel(reportReadiness)} tone={readinessTone(reportReadiness)} />
           </div>
 
           {filtered.length > 0 ? (
@@ -475,6 +485,20 @@ function PieceCard({
               High confidence
             </span>
           ) : null}
+<<<<<<< HEAD
+=======
+          {fragment.provenance === "real" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#C4704A]/30 bg-[#C4704A]/6 px-2.5 py-1 text-[11px] tracking-[0.08em] text-[#C4704A]/80">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#C4704A]/70" />
+              Real
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-stone/20 px-2.5 py-1 text-[11px] tracking-[0.08em] text-slate/30">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate/20" />
+              Test
+            </span>
+          )}
+>>>>>>> 098737e (Add provenance guardrails and isolate demo case data)
         </div>
       </div>
     </button>
@@ -486,11 +510,13 @@ function StatusChip({
   tone,
 }: {
   label: string;
-  tone: "neutral" | "accent" | "soft";
+  tone: "neutral" | "accent" | "soft" | "warning";
 }) {
   const className =
     tone === "accent"
       ? "border-terracotta/25 bg-terracotta/10 text-terracotta"
+      : tone === "warning"
+        ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
       : tone === "soft"
         ? "border-petalPink/35 bg-petalPink/12 text-rosewood/70"
         : "border-stone/25 bg-white/70 text-slate/55";
@@ -684,6 +710,7 @@ function EvidenceSidebar({
               </div>
               <SidebarRow label="Raw Source" value={fragment?.rawRef ?? ""} />
               <SidebarRow label="Fragment ID" value={fragment?.id ?? ""} mono />
+              <SidebarRow label="Provenance" value={fragment ? sentenceCase(fragment.provenance) : ""} />
             </div>
           </div>
 
@@ -703,15 +730,55 @@ function EvidenceSidebar({
   );
 }
 
-function GenerateButton() {
+function GenerateButton({ readiness }: { readiness: ReportReadiness }) {
+  const isReviewReady = readiness === "review-ready";
+
   return (
     <Link
+<<<<<<< HEAD
       href="/report/demo-child-a"
       className="inline-flex min-w-[220px] items-center justify-center rounded-full bg-terracotta px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-oxidizedRose"
     >
       Generate Sept 19th Package
+=======
+      href="/report/demo-child-a?print=1"
+      className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-full bg-slate px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-charcoal"
+    >
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+        <path d="M2 10L5 7L2 4M7 10L10 7L7 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {isReviewReady ? "Generate Sept 19th Package" : "Open Labeled Evidence Brief"}
+>>>>>>> 098737e (Add provenance guardrails and isolate demo case data)
     </Link>
   );
+}
+
+function readinessLabel(readiness: ReportReadiness) {
+  if (readiness === "review-ready") {
+    return "Review-ready evidence";
+  }
+
+  if (readiness === "internal-review") {
+    return "Mixed evidence: internal review only";
+  }
+
+  return "Demo-only evidence";
+}
+
+function readinessTone(readiness: ReportReadiness): "accent" | "warning" | "soft" {
+  if (readiness === "review-ready") {
+    return "accent";
+  }
+
+  if (readiness === "internal-review") {
+    return "warning";
+  }
+
+  return "soft";
+}
+
+function sentenceCase(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function Waveform({ id }: { id: string }) {

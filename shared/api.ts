@@ -47,6 +47,9 @@ export type GetReportResponse = CaseRecord & {
     claimCount: number;
     modalities: number;
     domains: number;
+    realFragments: number;
+    syntheticFragments: number;
+    mixedClaims: number;
   };
   claims: Array<
     Claim & {

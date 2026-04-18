@@ -9,7 +9,10 @@ import type {
   CaseBundle,
   CaseRecord,
   Claim,
+  ClaimProvenance,
   EvidenceFragment,
+  EvidenceProvenance,
+  ReportReadiness,
   SignalDomain,
   SourceType,
   TrajectoryPoint,
@@ -107,6 +110,9 @@ export class EvidenceService {
         claimCount: bundle.claims.length,
         modalities: Array.from(new Set(bundle.fragments.map((fragment) => fragment.modality))).length,
         domains: Array.from(new Set(bundle.fragments.map((fragment) => fragment.signalDomain))).length,
+        realFragments: bundle.fragments.filter((fragment) => fragment.provenance === "real").length,
+        syntheticFragments: bundle.fragments.filter((fragment) => fragment.provenance === "synthetic").length,
+        mixedClaims: bundle.claims.filter((claim) => claim.provenance === "mixed").length,
       },
       claims: bundle.claims.map((claim) => ({
         ...claim,
@@ -179,10 +185,6 @@ export class EvidenceService {
       return null;
     }
 
-    if (caseId === "demo-child-a") {
-      return candidates[0];
-    }
-
     const exactCase = candidates.find((candidate) => candidate.case_id === caseId);
     if (exactCase) {
       return exactCase;
@@ -202,6 +204,10 @@ function buildCaseRecord(
   const observationStart = fragments[0]?.date ?? new Date().toISOString();
   const observationEnd = fragments[fragments.length - 1]?.date ?? new Date().toISOString();
   const sourceDocumentCount = new Set(fragmentRows.map((row) => row.source_document_id)).size;
+  const realFragments = fragments.filter((fragment) => fragment.provenance === "real").length;
+  const syntheticFragments = fragments.length - realFragments;
+  const mixedClaims = claims.filter((claim) => claim.provenance === "mixed").length;
+  const reportReadiness = deriveReportReadiness(fragments, claims);
 
   return {
     id: candidate.case_id,
@@ -213,6 +219,8 @@ function buildCaseRecord(
     summary: `${candidate.label} is projected from ${fragments.length} evidence fragments across ${sourceDocumentCount} source document${sourceDocumentCount === 1 ? "" : "s"} and ${claims.length} synthesized claim${claims.length === 1 ? "" : "s"}.`,
     dataHandling: defaultDataHandling,
     reviewWindow: `Projected from evidence spanning ${observationStart} through ${observationEnd}.`,
+    provenanceSummary: `${realFragments} real fragment${realFragments === 1 ? "" : "s"}, ${syntheticFragments} synthetic fragment${syntheticFragments === 1 ? "" : "s"}, ${mixedClaims} mixed claim${mixedClaims === 1 ? "" : "s"}.`,
+    reportReadiness,
   };
 }
 
@@ -234,6 +242,7 @@ function mapFragment(row: FragmentRow): EvidenceFragment {
     deidentified: true,
     confidence: normalizeConfidence(row.confidence),
     rawRef: row.raw_ref,
+    provenance: "real",
   };
 }
 
@@ -246,7 +255,26 @@ function mapClaim(row: ClaimRow): Claim {
     trend: normalizeTrend(row.trend),
     confidence: normalizeConfidence(row.confidence),
     fragmentIds: row.fragment_ids,
+    provenance: "real",
   };
+}
+
+function deriveReportReadiness(
+  fragments: EvidenceFragment[],
+  claims: Claim[],
+): ReportReadiness {
+  const fragmentProvenance = new Set<EvidenceProvenance>(fragments.map((fragment) => fragment.provenance));
+  const claimProvenance = new Set<ClaimProvenance>(claims.map((claim) => claim.provenance));
+
+  if (fragmentProvenance.size === 1 && fragmentProvenance.has("real") && !claimProvenance.has("mixed")) {
+    return "review-ready";
+  }
+
+  if (fragmentProvenance.has("synthetic")) {
+    return fragmentProvenance.has("real") ? "internal-review" : "demo-only";
+  }
+
+  return "internal-review";
 }
 
 function buildTrajectory(fragments: EvidenceFragment[]): TrajectoryPoint[] {

@@ -22,7 +22,7 @@ test("GET /api/cases/:caseId projects canonical fragment data", async (t) => {
   assert.equal(payload.metrics.fragmentCount, 2);
 });
 
-test("GET /api/cases/demo-child-a resolves to the first canonical case for the frontend demo route", async (t) => {
+test("GET /api/cases/demo-child-a returns 404 because demo data is frontend-only", async (t) => {
   const app = await createApp();
   t.after(async () => {
     await app.close();
@@ -33,11 +33,7 @@ test("GET /api/cases/demo-child-a resolves to the first canonical case for the f
     url: "/api/cases/demo-child-a",
   });
 
-  assert.equal(response.statusCode, 200);
-
-  const payload = response.json();
-  assert.equal(payload.caseRecord.label, "Lindquist's Story");
-  assert.equal(payload.metrics.fragmentCount, 2);
+  assert.equal(response.statusCode, 404);
 });
 
 test("GET /api/fragments returns canonical evidence fragments", async (t) => {

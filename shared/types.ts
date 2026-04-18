@@ -14,6 +14,12 @@ export type SourceType =
 
 export type Trend = "stable" | "declining" | "improving" | "mixed";
 
+export type EvidenceProvenance = "real" | "synthetic";
+
+export type ClaimProvenance = "real" | "synthetic" | "mixed";
+
+export type ReportReadiness = "demo-only" | "internal-review" | "review-ready";
+
 export type EvidenceFragment = {
   id: string;
   caseId: string;
@@ -27,6 +33,7 @@ export type EvidenceFragment = {
   deidentified: true;
   confidence: "high" | "moderate";
   rawRef: string;
+  provenance: EvidenceProvenance;
 };
 
 export type Claim = {
@@ -37,6 +44,7 @@ export type Claim = {
   trend: Trend;
   confidence: "high" | "moderate";
   fragmentIds: string[];
+  provenance: ClaimProvenance;
 };
 
 export type CaseRecord = {
@@ -49,6 +57,8 @@ export type CaseRecord = {
   summary: string;
   dataHandling: string;
   reviewWindow: string;
+  provenanceSummary: string;
+  reportReadiness: ReportReadiness;
 };
 
 export type CaseBundle = {
