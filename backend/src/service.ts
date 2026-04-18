@@ -15,18 +15,18 @@ import type {
   TrajectoryPoint,
 } from "../../shared/types.js";
 
-import type { ProjectionRepository, ProjectionRow } from "./projection-repository.js";
+import type { CaseCandidate, ClaimRow, FragmentRow, ProjectionRepository } from "./projection-repository.js";
 
 const domainKeywords: Record<SignalDomain, string[]> = {
-  vocabulary: ["verbal", "speech", "language", "word", "vocabulary", "naming"],
-  recognition: ["recognition", "memory", "family", "voice", "identity", "familiar"],
+  vocabulary: ["verbal", "speech", "language", "word", "vocabulary", "naming", "alphabet", "song"],
+  recognition: ["recognition", "memory", "family", "voice", "identity", "familiar", "name"],
   sleep: ["sleep", "night", "bedtime", "waking", "rest"],
   behavior: ["behavior", "social", "daily life", "active", "routine", "milestones"],
-  motor: ["motor", "walking", "drive", "coordination", "move"],
+  motor: ["motor", "walking", "drive", "coordination", "move", "seizure"],
 };
 
 const defaultDataHandling =
-  "Projected from ingestion-layer extracted datapoints. Review support only; not a diagnosis, treatment recommendation, or approval recommendation.";
+  "Projected from canonical evidence fragments and claims in the ingestion layer. Review support only; not a diagnosis, treatment recommendation, or approval recommendation.";
 
 export class EvidenceService {
   constructor(private readonly repository: ProjectionRepository) {}
@@ -105,7 +105,7 @@ export class EvidenceService {
       metrics: {
         fragmentCount: bundle.fragments.length,
         claimCount: bundle.claims.length,
-        modalities: Array.from(new Set(bundle.fragments.map((fragment) => fragment.sourceType))).length,
+        modalities: Array.from(new Set(bundle.fragments.map((fragment) => fragment.modality))).length,
         domains: Array.from(new Set(bundle.fragments.map((fragment) => fragment.signalDomain))).length,
       },
       claims: bundle.claims.map((claim) => ({
@@ -139,90 +139,113 @@ export class EvidenceService {
       kpis: {
         retentionDelta,
         retentionDeltaDisplay: `${retentionDelta >= 0 ? "+" : ""}${retentionDelta}%`,
-        pValue: "Projected from extracted datapoints",
-        pLabel: "Inference from ingestion evidence",
+        pValue: "Projected from evidence fragments",
+        pLabel: "Inference from canonical evidence",
         observationMonths: monthDifference(bundle.caseRecord.observationStart, bundle.caseRecord.observationEnd),
       },
     };
   }
 
   async getCaseBundle(caseId: string): Promise<CaseBundle | null> {
-    const subjectLabel = await this.repository.resolveSubjectLabel(caseId);
+    const candidate = await this.resolveCaseCandidate(caseId);
 
-    if (!subjectLabel) {
+    if (!candidate) {
       return null;
     }
 
-    const rows = await this.repository.listCaseProjectionRows(subjectLabel);
+    const [fragmentRows, claimRows] = await Promise.all([
+      this.repository.listCaseFragments(candidate.case_id),
+      this.repository.listCaseClaims(candidate.case_id),
+    ]);
 
-    if (rows.length === 0) {
+    if (fragmentRows.length === 0) {
       return null;
     }
 
-    const fragments = rows
-      .map((row) => mapFragment(row, caseId))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    const claims = rows
-      .filter((row) => row.datapoint_type === "outcome_claim" || row.datapoint_type === "functional_signal")
-      .map((row) => mapClaim(row, caseId))
-      .sort((a, b) => a.id.localeCompare(b.id));
-
-    const disease = deriveDisease(rows);
-    const therapy = deriveTherapy(rows);
+    const fragments = fragmentRows.map((row) => mapFragment(row)).sort((a, b) => a.date.localeCompare(b.date));
+    const claims = claimRows.map((row) => mapClaim(row));
 
     return {
-      caseRecord: {
-        id: caseId,
-        label: subjectLabel,
-        disease,
-        therapy,
-        observationStart: fragments[0]?.date ?? new Date().toISOString(),
-        observationEnd: fragments[fragments.length - 1]?.date ?? new Date().toISOString(),
-        summary: buildSummary(subjectLabel, rows, claims.length),
-        dataHandling: defaultDataHandling,
-        reviewWindow: buildReviewWindow(rows),
-      },
+      caseRecord: buildCaseRecord(candidate, fragmentRows, fragments, claims),
       fragments,
       claims,
     };
   }
+
+  private async resolveCaseCandidate(caseId: string): Promise<CaseCandidate | null> {
+    const candidates = await this.repository.listCaseCandidates();
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (caseId === "demo-child-a") {
+      return candidates[0];
+    }
+
+    const exactCase = candidates.find((candidate) => candidate.case_id === caseId);
+    if (exactCase) {
+      return exactCase;
+    }
+
+    const slugMatch = candidates.find((candidate) => slugify(candidate.label) === caseId);
+    return slugMatch ?? null;
+  }
+}
+
+function buildCaseRecord(
+  candidate: CaseCandidate,
+  fragmentRows: FragmentRow[],
+  fragments: EvidenceFragment[],
+  claims: Claim[],
+): CaseRecord {
+  const observationStart = fragments[0]?.date ?? new Date().toISOString();
+  const observationEnd = fragments[fragments.length - 1]?.date ?? new Date().toISOString();
+  const sourceDocumentCount = new Set(fragmentRows.map((row) => row.source_document_id)).size;
+
+  return {
+    id: candidate.case_id,
+    label: candidate.label,
+    disease: deriveDisease(candidate, fragmentRows),
+    therapy: deriveTherapy(candidate),
+    observationStart,
+    observationEnd,
+    summary: `${candidate.label} is projected from ${fragments.length} evidence fragments across ${sourceDocumentCount} source document${sourceDocumentCount === 1 ? "" : "s"} and ${claims.length} synthesized claim${claims.length === 1 ? "" : "s"}.`,
+    dataHandling: defaultDataHandling,
+    reviewWindow: `Projected from evidence spanning ${observationStart} through ${observationEnd}.`,
+  };
 }
 
 function resolveClaimCitations(claim: Claim, fragments: EvidenceFragment[]) {
   return fragments.filter((fragment) => claim.fragmentIds.includes(fragment.id));
 }
 
-function mapFragment(row: ProjectionRow, caseId: string): EvidenceFragment {
-  const signalDomain = inferSignalDomain(row);
-  const title = buildFragmentTitle(row);
-  const date = deriveDate(row);
-
+function mapFragment(row: FragmentRow): EvidenceFragment {
   return {
-    id: `ED-${row.datapoint_id}`,
-    caseId,
-    date,
-    sourceType: normalizeSourceType(row.seed_source_type, row.platform),
-    modality: normalizeModality(row.content_type),
-    title,
-    excerpt: row.evidence_quote,
-    tags: buildFragmentTags(row, signalDomain),
-    signalDomain,
+    id: row.external_id,
+    caseId: row.case_id,
+    date: row.fragment_date,
+    sourceType: normalizeSourceType(row.source_type),
+    modality: normalizeModality(row.modality),
+    title: row.title,
+    excerpt: row.excerpt,
+    tags: row.tags_json,
+    signalDomain: normalizeSignalDomain(row.signal_domain),
     deidentified: true,
-    confidence: row.confidence === "medium" || row.confidence === "moderate" ? "moderate" : "high",
-    rawRef: `${row.seed_id} / doc:${row.source_document_id}${row.chunk_index !== null ? ` / chunk:${row.chunk_index}` : ""}`,
+    confidence: normalizeConfidence(row.confidence),
+    rawRef: row.raw_ref,
   };
 }
 
-function mapClaim(row: ProjectionRow, caseId: string): Claim {
+function mapClaim(row: ClaimRow): Claim {
   return {
-    id: `CLM-${row.datapoint_id}`,
-    caseId,
-    statement: extractClaimStatement(row),
-    domain: inferSignalDomain(row),
-    trend: inferTrend(row),
-    confidence: row.confidence === "medium" || row.confidence === "moderate" ? "moderate" : "high",
-    fragmentIds: [`ED-${row.datapoint_id}`],
+    id: row.external_id,
+    caseId: row.case_id,
+    statement: row.statement,
+    domain: normalizeSignalDomain(row.signal_domain),
+    trend: normalizeTrend(row.trend),
+    confidence: normalizeConfidence(row.confidence),
+    fragmentIds: row.fragment_ids,
   };
 }
 
@@ -252,160 +275,54 @@ function buildTrajectory(fragments: EvidenceFragment[]): TrajectoryPoint[] {
   });
 }
 
-function buildSummary(subjectLabel: string, rows: ProjectionRow[], claimCount: number) {
-  const functionalCount = rows.filter((row) => row.datapoint_type === "functional_signal").length;
-  const trialCount = rows.filter((row) => row.datapoint_type === "trial_participation").length;
+function deriveDisease(candidate: CaseCandidate, fragmentRows: FragmentRow[]) {
+  const subtype = candidate.disease_subtype ?? fragmentRows.find((row) => row.disease_subtype)?.disease_subtype;
 
-  return `${subjectLabel} is projected from ${rows.length} extracted datapoints across ${rows.length > 0 ? new Set(rows.map((row) => row.source_document_id)).size : 0} source documents, including ${functionalCount} functional signals and ${claimCount} synthesized claims.${trialCount > 0 ? " Trial participation evidence is present." : ""}`;
+  if (!subtype || subtype.toLowerCase() === "unknown") {
+    return "Sanfilippo Syndrome";
+  }
+
+  return subtype.toLowerCase().includes("sanfilippo") ? subtype : `Sanfilippo Syndrome ${subtype}`;
 }
 
-function buildReviewWindow(rows: ProjectionRow[]) {
-  const dates = rows
-    .map((row) => deriveDate(row))
-    .sort((a, b) => a.localeCompare(b));
-
-  if (dates.length === 0) {
-    return "No observation window available.";
+function deriveTherapy(candidate: CaseCandidate) {
+  if (candidate.trial_program) {
+    return `${candidate.trial_program} evidence brief`;
   }
 
-  return `Projected from evidence spanning ${dates[0]} through ${dates[dates.length - 1]}.`;
-}
-
-function buildFragmentTitle(row: ProjectionRow) {
-  const value = row.value_json;
-
-  switch (row.datapoint_type) {
-    case "functional_signal":
-      return humanize(readString(value, "signal") ?? "Functional signal");
-    case "outcome_claim":
-      return humanize(readString(value, "claim") ?? "Outcome claim");
-    case "temporal_marker":
-      return humanize(readString(value, "marker") ?? "Temporal marker");
-    case "trial_participation":
-      return "Trial participation evidence";
-    case "disease_subtype":
-      return humanize(readString(value, "subtype") ?? "Disease subtype");
-    case "caregiver_role":
-      return humanize(readString(value, "relation") ?? "Caregiver role");
-    case "child_identity":
-      return humanize(readString(value, "display_name") ?? "Child identity");
-    default:
-      return humanize(row.datapoint_type.replaceAll("_", " "));
-  }
-}
-
-function buildFragmentTags(row: ProjectionRow, signalDomain: SignalDomain) {
-  const tags = new Set<string>([row.datapoint_type, signalDomain]);
-  const value = row.value_json;
-
-  for (const key of ["kind", "direction", "relation", "marker_type", "participation_status"]) {
-    const item = readString(value, key);
-    if (item) {
-      tags.add(item.toLowerCase());
-    }
+  if (candidate.treatment_status === "treated") {
+    return "Treated observational evidence";
   }
 
-  const subtype = readString(value, "subtype");
-  if (subtype) {
-    tags.add(subtype.toLowerCase());
-  }
-
-  return Array.from(tags);
-}
-
-function deriveDisease(rows: ProjectionRow[]) {
-  for (const row of rows) {
-    const fromValue = readString(row.value_json, "subtype");
-    if (fromValue) {
-      return fromValue;
-    }
-    if (row.disease_subtype) {
-      return row.disease_subtype;
-    }
-  }
-
-  return "Sanfilippo Syndrome";
-}
-
-function deriveTherapy(rows: ProjectionRow[]) {
-  const trialProgram = rows.find((row) => row.trial_program)?.trial_program;
-  if (trialProgram) {
-    return `${trialProgram} evidence projection`;
-  }
-
-  if (rows.some((row) => row.datapoint_type === "trial_participation")) {
-    return "Trial participation evidence";
+  if (candidate.treatment_status === "untreated") {
+    return "Untreated observational evidence";
   }
 
   return "Public narrative evidence";
 }
 
-function inferSignalDomain(row: ProjectionRow): SignalDomain {
-  const haystack = `${row.evidence_quote} ${readString(row.value_json, "signal") ?? ""} ${readString(row.value_json, "claim") ?? ""}`.toLowerCase();
-
-  for (const [domain, keywords] of Object.entries(domainKeywords) as Array<[SignalDomain, string[]]>) {
-    if (keywords.some((keyword) => haystack.includes(keyword))) {
-      return domain;
-    }
-  }
-
-  switch (row.datapoint_type) {
-    case "trial_participation":
-    case "caregiver_role":
-      return "behavior";
-    case "temporal_marker":
-      return "recognition";
-    default:
-      return "behavior";
-  }
-}
-
-function inferTrend(row: ProjectionRow): Claim["trend"] {
-  const direction = readString(row.value_json, "direction")?.toLowerCase();
-
-  if (direction === "worsened") {
-    return "declining";
-  }
-
-  if (direction === "present") {
-    return "stable";
-  }
-
-  if (direction === "mixed") {
-    return "mixed";
-  }
-
-  return "stable";
-}
-
-function extractClaimStatement(row: ProjectionRow) {
-  return readString(row.value_json, "claim") ?? readString(row.value_json, "signal") ?? row.evidence_quote;
-}
-
-function deriveDate(row: ProjectionRow) {
-  const temporal = readString(row.value_json, "marker");
-  const markerType = readString(row.value_json, "marker_type");
-
-  if (row.datapoint_type === "temporal_marker" && markerType === "date" && temporal) {
-    const parsed = Date.parse(temporal);
-    if (!Number.isNaN(parsed)) {
-      return new Date(parsed).toISOString();
-    }
-  }
-
-  return row.fetched_at ?? new Date().toISOString();
-}
-
 function directionWeight(fragment: EvidenceFragment) {
   const tagString = fragment.tags.join(" ").toLowerCase();
+  const excerpt = fragment.excerpt.toLowerCase();
+  const haystack = `${tagString} ${excerpt}`;
 
-  if (tagString.includes("worsened")) {
+  if (
+    haystack.includes("worsened") ||
+    haystack.includes("declin") ||
+    haystack.includes("lost the ability") ||
+    haystack.includes("loss")
+  ) {
     return -5;
   }
-  if (tagString.includes("mixed")) {
+  if (haystack.includes("mixed")) {
     return -2;
   }
-  if (tagString.includes("present") || fragment.confidence === "high") {
+  if (
+    haystack.includes("stable") ||
+    haystack.includes("retained") ||
+    haystack.includes("preserved") ||
+    fragment.confidence === "high"
+  ) {
     return 1;
   }
   return 0;
@@ -438,42 +355,54 @@ function scoreFragment(fragment: EvidenceFragment, domain?: SignalDomain, normal
   return score;
 }
 
-function normalizeSourceType(seedSourceType: string, platform: string): SourceType {
-  const source = `${seedSourceType} ${platform}`.toLowerCase();
-
-  if (source.includes("voice") || source.includes("audio")) {
-    return "Voice Memo";
+function normalizeSourceType(value: string): SourceType {
+  switch (value) {
+    case "Parent Journal":
+    case "Caregiver Transcript":
+    case "Clinic Summary":
+    case "Forum Observation":
+    case "Voice Memo":
+      return value;
+    default:
+      return "Forum Observation";
   }
-  if (source.includes("clinic") || source.includes("hospital")) {
-    return "Clinic Summary";
-  }
-  if (source.includes("transcript")) {
-    return "Caregiver Transcript";
-  }
-  if (source.includes("journal")) {
-    return "Parent Journal";
-  }
-  return "Forum Observation";
 }
 
-function normalizeModality(contentType: string | null): EvidenceFragment["modality"] {
-  const value = contentType?.toLowerCase() ?? "";
-  if (value.includes("audio")) {
-    return "audio-transcript";
+function normalizeModality(value: string): EvidenceFragment["modality"] {
+  if (value === "audio-transcript" || value === "summary" || value === "text") {
+    return value;
   }
-  if (value.includes("pdf") || value.includes("html")) {
-    return "summary";
-  }
+
   return "text";
 }
 
-function readString(value: Record<string, unknown>, key: string) {
-  const result = value[key];
-  return typeof result === "string" ? result : undefined;
+function normalizeSignalDomain(value: string): SignalDomain {
+  switch (value) {
+    case "vocabulary":
+    case "recognition":
+    case "sleep":
+    case "behavior":
+    case "motor":
+      return value;
+    default:
+      return "behavior";
+  }
 }
 
-function humanize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function normalizeTrend(value: string): Claim["trend"] {
+  switch (value) {
+    case "stable":
+    case "declining":
+    case "improving":
+    case "mixed":
+      return value;
+    default:
+      return "stable";
+  }
+}
+
+function normalizeConfidence(value: string): EvidenceFragment["confidence"] {
+  return value === "moderate" || value === "medium" ? "moderate" : "high";
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -489,4 +418,14 @@ function monthDifference(start: string, end: string) {
     (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
       (endDate.getUTCMonth() - startDate.getUTCMonth()),
   );
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

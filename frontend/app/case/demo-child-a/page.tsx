@@ -9,7 +9,7 @@ export default async function DemoCasePage() {
     return (
       <DataUnavailable
         title="Demo case is not projected yet."
-        body="The backend route for the demo case is reachable, but it does not yet have the extracted datapoints needed to assemble fragments, claims, and trajectory data for the workbench."
+        body="The backend route for the demo case is reachable, but it does not yet have the evidence fragments and claims needed to assemble the workbench."
       />
     );
   }

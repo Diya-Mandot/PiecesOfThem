@@ -20,6 +20,7 @@ class PipelineConfig:
     db_start_timeout_seconds: int
     chunk_target_chars: int
     chunk_overlap_chars: int
+    max_adjacent_hops: int
     scraper_user_agent: str
 
 
@@ -45,10 +46,11 @@ def load_config() -> PipelineConfig:
         postgres_user=os.getenv("POSTGRES_USER", "pieces"),
         postgres_password=os.getenv("POSTGRES_PASSWORD", "pieces"),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-5.4-mini"),
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-5-nano"),
         db_start_timeout_seconds=_env_int("PIPELINE_DB_START_TIMEOUT_SECONDS", "45"),
         chunk_target_chars=_env_int("PIPELINE_CHUNK_TARGET_CHARS", "2000"),
         chunk_overlap_chars=_env_int("PIPELINE_CHUNK_OVERLAP_CHARS", "200"),
+        max_adjacent_hops=_env_int("PIPELINE_MAX_ADJACENT_HOPS", "3"),
         scraper_user_agent=os.getenv(
             "PIPELINE_SCRAPER_USER_AGENT",
             "PiecesOfThemHackathonBot/0.1",

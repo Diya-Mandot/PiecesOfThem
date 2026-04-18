@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from pipeline.models import ExtractionResponse
+from pipeline.models import ExtractionDecision, ExtractionResponse
 
 
 def test_extraction_response_validates_datapoints():
@@ -14,6 +14,7 @@ def test_extraction_response_validates_datapoints():
                 "trial_program": "UX111-ABO-102",
                 "confidence": "high",
                 "evidence_quote": "Eliza was treated.",
+                "supporting_chunk_ids": [1],
                 "value": {
                     "kind": "trial_participation",
                     "participation_status": "confirmed",
@@ -33,6 +34,7 @@ def test_extraction_response_accepts_omitted_optional_fields():
                 "datapoint_type": "child_identity",
                 "confidence": "medium",
                 "evidence_quote": "Eliza.",
+                "supporting_chunk_ids": [1],
                 "value": {
                     "kind": "child_identity",
                     "display_name": "Eliza O'Neill",
@@ -42,6 +44,7 @@ def test_extraction_response_accepts_omitted_optional_fields():
                 "datapoint_type": "caregiver_role",
                 "confidence": "low",
                 "evidence_quote": "Her mother spoke.",
+                "supporting_chunk_ids": [1],
                 "value": {
                     "kind": "caregiver_role",
                     "relation": "mother",
@@ -62,6 +65,7 @@ def test_trial_participation_accepts_named_publicly_false():
                 "datapoint_type": "trial_participation",
                 "confidence": "high",
                 "evidence_quote": "The family participated anonymously.",
+                "supporting_chunk_ids": [1],
                 "value": {
                     "kind": "trial_participation",
                     "participation_status": "confirmed",
@@ -83,6 +87,7 @@ def test_trial_participation_accepts_named_publicly_false():
                     "datapoint_type": "trial_participation",
                     "confidence": "high",
                     "evidence_quote": "   ",
+                    "supporting_chunk_ids": [1],
                     "value": {
                         "kind": "trial_participation",
                         "participation_status": "confirmed",
@@ -98,6 +103,7 @@ def test_trial_participation_accepts_named_publicly_false():
                     "subject_label": "   ",
                     "confidence": "high",
                     "evidence_quote": "Eliza was treated.",
+                    "supporting_chunk_ids": [1],
                     "value": {
                         "kind": "trial_participation",
                         "participation_status": "confirmed",
@@ -112,6 +118,7 @@ def test_trial_participation_accepts_named_publicly_false():
                     "datapoint_type": "trial_participation",
                     "confidence": "high",
                     "evidence_quote": "Eliza was treated.",
+                    "supporting_chunk_ids": [1],
                     "value": {
                         "kind": "trial_participation",
                         "participation_status": "confirmed",
@@ -127,6 +134,7 @@ def test_trial_participation_accepts_named_publicly_false():
                     "datapoint_type": "trial_participation",
                     "confidence": "high",
                     "evidence_quote": "Eliza was treated.",
+                    "supporting_chunk_ids": [1],
                     "value": {
                         "kind": "outcome_claim",
                         "claim": "She improved.",
@@ -140,3 +148,56 @@ def test_trial_participation_accepts_named_publicly_false():
 def test_extraction_response_rejects_blank_quotes_and_bad_payloads(payload):
     with pytest.raises(ValidationError):
         ExtractionResponse.model_validate(payload)
+
+
+def test_extraction_decision_accepts_context_request():
+    payload = {
+        "action": "request_more_context",
+        "reason": "The sentence appears to continue in adjacent chunks.",
+        "requested_directions": ["left", "right"],
+        "datapoints": [],
+    }
+    result = ExtractionDecision.model_validate(payload)
+    assert result.action == "request_more_context"
+    assert result.requested_directions == ["left", "right"]
+
+
+def test_extraction_decision_accepts_supporting_chunk_ids():
+    payload = {
+        "action": "submit_datapoints",
+        "datapoints": [
+            {
+                "datapoint_type": "functional_signal",
+                "confidence": "high",
+                "evidence_quote": "He still remembered the dog's name.",
+                "supporting_chunk_ids": [11, 12],
+                "value": {
+                    "kind": "functional_signal",
+                    "signal": "remembered the dog's name",
+                    "direction": "present",
+                },
+            }
+        ],
+    }
+    result = ExtractionDecision.model_validate(payload)
+    assert result.datapoints[0].supporting_chunk_ids == [11, 12]
+
+
+def test_extraction_decision_rejects_missing_supporting_chunk_ids():
+    payload = {
+        "action": "submit_datapoints",
+        "datapoints": [
+            {
+                "datapoint_type": "functional_signal",
+                "confidence": "high",
+                "evidence_quote": "He still remembered the dog's name.",
+                "value": {
+                    "kind": "functional_signal",
+                    "signal": "remembered the dog's name",
+                    "direction": "present",
+                },
+            }
+        ],
+    }
+    with pytest.raises(ValidationError):
+        ExtractionDecision.model_validate(payload)
