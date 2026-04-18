@@ -18,8 +18,8 @@ Output:
 Owner: AI / RAG
 
 Files:
-- `frontend/lib/types.ts`
-- `frontend/lib/view-types.ts`
+- `shared/types.ts`
+- `shared/api.ts`
 
 Purpose:
 - define `CaseRecord`, `EvidenceFragment`, and `Claim`
@@ -33,8 +33,8 @@ Done when:
 Owner: AI / RAG
 
 Files:
-- `frontend/lib/data.ts`
-- `frontend/lib/logic.ts`
+- `backend/src/projection-repository.ts`
+- `backend/src/service.ts`
 
 Purpose:
 - create the demo case
@@ -80,10 +80,9 @@ Done when:
 Owner: Backend
 
 Files:
-- `frontend/app/api/cases/[caseId]/route.ts`
-- `frontend/app/api/fragments/route.ts`
-- `frontend/app/api/claims/route.ts`
-- `frontend/app/api/report/[caseId]/route.ts`
+- `backend/src/routes.ts`
+- `backend/src/service.ts`
+- `backend/src/server.ts`
 
 Purpose:
 - expose stable route responses
@@ -112,8 +111,8 @@ Done when:
 Owner: AI / RAG
 
 Files:
-- `frontend/lib/data.ts`
-- `frontend/lib/logic.ts`
+- `backend/src/service.ts`
+- `backend/src/projection-repository.ts`
 
 Purpose:
 - improve retrieval quality
@@ -129,6 +128,7 @@ Owner: Backend
 Files:
 - `frontend/app/layout.tsx`
 - `frontend/package.json`
+- `backend/package.json`
 - `README.md`
 
 Purpose:
