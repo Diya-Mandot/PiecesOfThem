@@ -212,20 +212,30 @@ export function LandingPage() {
 
           <blockquote className="space-y-6">
             <p className="font-newsreader text-xl leading-[1.7] text-white/50 lg:text-2xl" style={{ fontStyle: "italic" }}>
-              &ldquo;On the drive home he asked for his favorite song by name from the back seat, clearly and without anyone setting it up. We both went quiet because we had not heard a spontaneous song request in about eight months.
+              &ldquo;We were told early to late teens when he was diagnosed at ten and a half. He is fifteen now and I still cannot say that out loud without something catching in my throat.
             </p>
             <p className="font-newsreader text-2xl leading-[1.45] text-white lg:text-[2.5rem]" style={{ fontStyle: "italic" }}>
-              It was such a small sentence, but it felt enormous — because it meant the connection was still there: the song, the memory of it, and the language needed to ask for it.&rdquo;
+              He still knows our names. He still knows his dog. I thought I would spend these years grieving on a schedule we were given — but instead I find myself writing past it.&rdquo;
             </p>
           </blockquote>
 
           <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-white/10 pt-8">
-            <p className="text-sm text-white/35">— Caregiver transcript · August 2025</p>
+            <p className="text-sm text-white/35">
+              — Mike Dobbyn, Sanfilippo dad ·{" "}
+              <a
+                href="https://www.thecantoncitizen.com/2024/06/14/reflections-of-a-sanfilippo-dad-5-years-post-diagnosis/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 transition hover:text-white/55"
+              >
+                The Canton Citizen · June 2024
+              </a>
+            </p>
             <span className="rounded-full border border-petalPink/30 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-petalPink/60">
-              Speech domain
+              Recognition domain
             </span>
             <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/25">
-              Confidence 91%
+              MPS IIIC · 5-yr post-diagnosis
             </span>
           </div>
         </div>

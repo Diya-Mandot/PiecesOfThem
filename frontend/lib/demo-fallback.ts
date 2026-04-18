@@ -303,6 +303,55 @@ export const demoFallbackBundle: CaseBundle = {
       confidence: "moderate",
       rawRef: "Forum paraphrase / April 2026",
     },
+
+    // ── Real-world source: thecantoncitizen.com / June 14 2024
+    // "Reflections of a Sanfilippo Dad: 5 Years Later" — Mike Dobbyn (MPS IIIC)
+    // Adapted as natural-history cross-subtype reference for the demo case.
+    {
+      id: "FRG-2024-EXT-001",
+      caseId: "demo-child-a",
+      date: "2024-06-14",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "Five-year milestone: still here at fifteen",
+      excerpt:
+        "We were told early to late teens when he was diagnosed at ten and a half. He is fifteen now and I still cannot say that out loud without something catching in my throat. He still knows our names. He still knows his dog. He still knows the shape of a day. I thought I would spend these years grieving on a schedule we were given, but instead I find myself writing past it — surprised every morning that there is still a morning.",
+      tags: ["recognition", "prognosis", "milestone", "caregiver", "5-year"],
+      signalDomain: "recognition",
+      deidentified: true,
+      confidence: "high",
+      rawRef: "thecantoncitizen.com / Jun 14 2024 / Mike Dobbyn (MPS IIIC — cross-subtype natural history reference)",
+    },
+    {
+      id: "FRG-2024-EXT-002",
+      caseId: "demo-child-a",
+      date: "2024-06-14",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "Caregiver grief and recovery arc",
+      excerpt:
+        "The week after the diagnosis I lost fifteen pounds without trying. I stopped sleeping. I was reading research papers at two in the morning and the floor kept dropping out. For months I thought I was keeping it together, but I was mostly disappearing inside it. What pulled me back was not the grief getting smaller — it was finding other fathers who were carrying the same weight and still choosing to fight.",
+      tags: ["behavior", "caregiver stress", "grief", "recovery", "peer support"],
+      signalDomain: "behavior",
+      deidentified: true,
+      confidence: "high",
+      rawRef: "thecantoncitizen.com / Jun 14 2024 / Mike Dobbyn (MPS IIIC — cross-subtype natural history reference)",
+    },
+    {
+      id: "FRG-2024-EXT-003",
+      caseId: "demo-child-a",
+      date: "2024-06-14",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "Clinical trial pursuit — Phoenix Nest",
+      excerpt:
+        "A woman in Brooklyn had turned her son's diagnosis into a biotech company. I drove there the next day. She explained the gene therapy in plain words — the window, the timeline, what the data showed. I wrote it all down because I needed it to be real and not just something I had read at midnight. I drove home knowing more than I had that morning, and some of it was hard, and some of it finally had a forward direction.",
+      tags: ["behavior", "clinical trial", "gene therapy", "advocacy", "UX111"],
+      signalDomain: "behavior",
+      deidentified: true,
+      confidence: "moderate",
+      rawRef: "thecantoncitizen.com / Jun 14 2024 / Mike Dobbyn (MPS IIIC — Phoenix Nest / cross-subtype reference)",
+    },
   ],
   claims: [
     {
@@ -323,7 +372,7 @@ export const demoFallbackBundle: CaseBundle = {
       domain: "recognition",
       trend: "stable",
       confidence: "high",
-      fragmentIds: ["FRG-2024-114", "FRG-2025-018", "FRG-2026-013", "FRG-2026-041", "FRG-2026-031", "FRG-2026-072"],
+      fragmentIds: ["FRG-2024-114", "FRG-2025-018", "FRG-2026-013", "FRG-2026-041", "FRG-2026-031", "FRG-2026-072", "FRG-2024-EXT-001"],
     },
     {
       id: "CLM-SLEEP-IMPROVING",
@@ -343,7 +392,7 @@ export const demoFallbackBundle: CaseBundle = {
       domain: "behavior",
       trend: "stable",
       confidence: "high",
-      fragmentIds: ["FRG-2025-128", "FRG-2026-053", "FRG-2026-061", "FRG-2026-084"],
+      fragmentIds: ["FRG-2025-128", "FRG-2026-053", "FRG-2026-061", "FRG-2026-084", "FRG-2024-EXT-002", "FRG-2024-EXT-003"],
     },
   ],
 };
