@@ -1,15 +1,15 @@
 import { DataUnavailable } from "@/components/data-unavailable";
 import { ReportPage } from "@/components/report-page";
-import { aggregateEvidenceId, getReport } from "@/lib/api";
+import { getReport } from "@/lib/api";
 
 export default async function DemoReportPage() {
-  const report = await getReport(aggregateEvidenceId);
+  const report = await getReport("demo-child-a");
 
   if (!report) {
     return (
       <DataUnavailable
         title="Evidence brief is not available yet."
-        body="The report route depends on canonical evidence fragments and claims from the ingestion pipeline. Those records have not been produced yet, so the aggregate evidence brief cannot be assembled."
+        body="The report route depends on canonical evidence fragments and claims from the ingestion pipeline. Those records have not been produced yet, so the evidence brief cannot be assembled."
       />
     );
   }

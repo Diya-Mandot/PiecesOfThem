@@ -16,8 +16,8 @@ export function DataUnavailable({
         <h1 className="mt-4 font-display text-4xl tracking-[-0.03em]">{title}</h1>
         <p className="mt-5 text-base leading-7 text-slate/72">{body}</p>
         <p className="mt-4 text-sm leading-7 text-slate/62">
-          The ingestion database is populated, but the frontend-facing evidence projection is not
-          available yet. This usually means canonical evidence fragments and claims have not been written yet.
+          The ingestion database is populated, but the frontend-facing case projection is not
+          available yet. This usually means extracted datapoints have not been written yet.
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
           <Link

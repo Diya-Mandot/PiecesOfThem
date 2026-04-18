@@ -34,9 +34,6 @@ export type EvidenceFragment = {
   confidence: "high" | "moderate";
   rawRef: string;
   provenance: EvidenceProvenance;
-  sourceLabel?: string;
-  sourceUrl?: string;
-  documentTitle?: string;
 };
 
 export type Claim = {

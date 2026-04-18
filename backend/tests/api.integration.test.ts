@@ -19,10 +19,10 @@ test("GET /api/cases/:caseId projects canonical fragment data", async (t) => {
   const payload = response.json();
   assert.equal(payload.caseRecord.id, "PSS-003");
   assert.equal(payload.caseRecord.label, "Lindquist's Story");
-  assert.ok(payload.metrics.fragmentCount > 0);
+  assert.equal(payload.metrics.fragmentCount, 2);
 });
 
-test("GET /api/cases/all-evidence projects the aggregate evidence archive", async (t) => {
+test("GET /api/cases/demo-child-a returns 404 because demo data is frontend-only", async (t) => {
   const app = await createApp();
   t.after(async () => {
     await app.close();
@@ -30,15 +30,10 @@ test("GET /api/cases/all-evidence projects the aggregate evidence archive", asyn
 
   const response = await app.inject({
     method: "GET",
-    url: "/api/cases/all-evidence",
+    url: "/api/cases/demo-child-a",
   });
 
-  assert.equal(response.statusCode, 200);
-
-  const payload = response.json();
-  assert.equal(payload.caseRecord.id, "all-evidence");
-  assert.equal(payload.caseRecord.label, "All Evidence Findings");
-  assert.ok(payload.metrics.fragmentCount > 0);
+  assert.equal(response.statusCode, 404);
 });
 
 test("GET /api/fragments returns canonical evidence fragments", async (t) => {
@@ -55,7 +50,8 @@ test("GET /api/fragments returns canonical evidence fragments", async (t) => {
   assert.equal(response.statusCode, 200);
 
   const payload = response.json();
-  assert.ok(payload.fragments.length > 0);
+  assert.equal(payload.fragments.length, 2);
+  assert.ok(payload.fragments.every((fragment: { sourceType: string }) => fragment.sourceType === "Parent Journal"));
   assert.ok(
     payload.fragments.some((fragment: { signalDomain: string }) => fragment.signalDomain === "vocabulary"),
   );
@@ -94,7 +90,7 @@ test("GET /api/report/:caseId returns a report assembled from canonical claims a
 
   const payload = response.json();
   assert.equal(payload.id, "PSS-003");
-  assert.ok(payload.metrics.fragmentCount > 0);
+  assert.equal(payload.metrics.fragmentCount, 2);
 });
 
 test("GET /api/chart/trajectory/:caseId returns chart data from canonical fragments", async (t) => {
@@ -111,7 +107,7 @@ test("GET /api/chart/trajectory/:caseId returns chart data from canonical fragme
   assert.equal(response.statusCode, 200);
 
   const payload = response.json();
-  assert.ok(payload.trajectoryPoints.length > 0);
+  assert.equal(payload.trajectoryPoints.length, 2);
 });
 
 test("GET /api/ingestion/evidence-fragments returns canonical evidence records", async (t) => {
@@ -128,7 +124,7 @@ test("GET /api/ingestion/evidence-fragments returns canonical evidence records",
   assert.equal(response.statusCode, 200);
 
   const payload = response.json();
-  assert.ok(payload.total_count > 0);
+  assert.equal(payload.total_count, 2);
   assert.ok(Array.isArray(payload.evidence_fragments));
   assert.ok(payload.evidence_fragments.every((fragment: { external_id: string }) => fragment.external_id.startsWith("FRG-")));
 });
@@ -187,7 +183,7 @@ test("GET /api/ingestion/claims returns canonical claim records with fragment li
   assert.equal(response.statusCode, 200);
 
   const payload = response.json();
-  assert.ok(payload.total_count > 0);
+  assert.equal(payload.total_count, 1);
   assert.ok(Array.isArray(payload.claims));
   assert.ok(Array.isArray(payload.claims[0].fragment_ids));
 });

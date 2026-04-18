@@ -1,15 +1,15 @@
 import { DataUnavailable } from "@/components/data-unavailable";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { aggregateEvidenceId, getWorkbenchData } from "@/lib/api";
+import { getWorkbenchData } from "@/lib/api";
 
 export default async function DemoCasePage() {
-  const workbench = await getWorkbenchData(aggregateEvidenceId);
+  const workbench = await getWorkbenchData("demo-child-a");
 
   if (!workbench) {
     return (
       <DataUnavailable
-        title="Evidence archive is not projected yet."
-        body="The backend route is reachable, but it does not yet have the evidence fragments and claims needed to assemble the evidence workbench."
+        title="Demo case is not projected yet."
+        body="The backend route for the demo case is reachable, but it does not yet have the evidence fragments and claims needed to assemble the workbench."
       />
     );
   }

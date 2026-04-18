@@ -133,7 +133,7 @@ export function DashboardShell({
         .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
     })();
 
-    // Real fragments sort ahead of any non-production test data.
+    // Real fragments always surface above synthetic demo data.
     return [...base].sort((a, b) => {
       const aReal = a.provenance === "real" ? 0 : 1;
       const bReal = b.provenance === "real" ? 0 : 1;
@@ -777,7 +777,7 @@ function GenerateButton({ readiness }: { readiness: ReportReadiness }) {
 
   return (
     <Link
-      href="/report/all-evidence?print=1"
+      href="/report/demo-child-a?print=1"
       className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-full bg-slate px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-charcoal"
     >
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none">

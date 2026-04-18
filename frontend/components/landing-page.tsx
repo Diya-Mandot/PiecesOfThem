@@ -171,7 +171,7 @@ export function LandingPage() {
 
           {/* CTAs */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/case/all-evidence"
+            <Link href="/case/demo-child-a"
               className="group relative flex items-center gap-2 overflow-hidden rounded-full bg-slate px-8 py-4 text-sm font-medium text-white shadow-sm transition hover:bg-charcoal">
               <svg
                 className="h-3.5 w-3.5 shrink-0 translate-x-[-18px] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
@@ -180,11 +180,11 @@ export function LandingPage() {
                 <path d="M2 2L6 1L12 5L13 11L8 13L2 9L2 2Z" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
                 <circle cx="7.5" cy="6.5" r="1.5" fill="white" opacity="0.6" />
               </svg>
-              <span className="transition-all duration-200 group-hover:-translate-x-0.5">Browse All Evidence</span>
+              <span className="transition-all duration-200 group-hover:-translate-x-0.5">Enter the Archive</span>
             </Link>
-            <Link href="/report/all-evidence"
+            <Link href="/report/demo-child-a"
               className="rounded-full border border-stone/40 bg-white/60 px-8 py-4 text-sm text-slate/60 transition hover:border-stone/60 hover:bg-white hover:text-slate">
-              View Aggregate Brief
+              View Evidence Brief
             </Link>
           </div>
 
@@ -283,7 +283,7 @@ export function LandingPage() {
           <p className="font-newsreader mx-auto mt-5 max-w-md text-lg text-white/50" style={{ fontStyle: "italic" }}>
             UX111 wasn&apos;t rejected for safety. It was rejected for paperwork. Help us fix that.
           </p>
-          <Link href="/case/all-evidence"
+          <Link href="/case/demo-child-a"
             className="group mt-10 inline-flex items-center gap-2 rounded-full bg-terracotta px-9 py-4 text-sm font-medium text-white shadow-sm transition hover:bg-oxidizedRose">
             <svg
               className="h-3.5 w-3.5 shrink-0 translate-x-[-18px] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
@@ -292,7 +292,7 @@ export function LandingPage() {
               <path d="M2 2L6 1L12 5L13 11L8 13L2 9L2 2Z" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
               <circle cx="7.5" cy="6.5" r="1.5" fill="white" opacity="0.6" />
             </svg>
-            <span className="transition-all duration-200 group-hover:-translate-x-0.5">Browse All Evidence</span>
+            <span className="transition-all duration-200 group-hover:-translate-x-0.5">Enter the Archive</span>
           </Link>
         </div>
       </section>
