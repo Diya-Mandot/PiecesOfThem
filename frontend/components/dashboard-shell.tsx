@@ -125,15 +125,20 @@ export function DashboardShell({
   );
 
   const filtered = useMemo(() => {
-    if (!rankedIds) {
-      return domainFiltered;
-    }
+    const base = (() => {
+      if (!rankedIds) return domainFiltered;
+      const byId = new Map(domainFiltered.map((fragment) => [fragment.id, fragment]));
+      return rankedIds
+        .map((id) => byId.get(id))
+        .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
+    })();
 
-    const byId = new Map(domainFiltered.map((fragment) => [fragment.id, fragment]));
-
-    return rankedIds
-      .map((id) => byId.get(id))
-      .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
+    // Real (scraped) fragments always surface above synthetic test data
+    return [...base].sort((a, b) => {
+      const aReal = a.id.includes("EXT") ? 0 : 1;
+      const bReal = b.id.includes("EXT") ? 0 : 1;
+      return aReal - bReal;
+    });
   }, [domainFiltered, rankedIds]);
 
   const activeSearch = searchQuery.trim();
