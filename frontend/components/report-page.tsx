@@ -1,7 +1,8 @@
-import { formatDate } from "@/lib/format";
-import type { ReturnTypeOfReportPayload } from "@/lib/view-types";
+import type { GetReportResponse } from "@shared/api";
 
-export function ReportPage({ report }: { report: ReturnTypeOfReportPayload }) {
+import { formatDate } from "@/lib/format";
+
+export function ReportPage({ report }: { report: GetReportResponse }) {
   return (
     <main className="min-h-screen bg-ivory px-5 py-8 text-slate sm:px-8 lg:px-10">
       <div className="mx-auto max-w-5xl rounded-[2.2rem] border border-stone/30 bg-white p-8 shadow-paper sm:p-10">
