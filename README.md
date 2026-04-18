@@ -1,16 +1,27 @@
 # PiecesOfThem
 
-PiecesOfThem is a premium frontend prototype for assembling de-identified lived-experience fragments into a reviewer-friendly evidence ledger for Sanfilippo syndrome.
+PiecesOfThem is an agentic evidence workbench for turning Sanfilippo lived-experience data into reviewer-friendly, citation-backed clinical evidence.
 
 ## Repo layout
 
-- `frontend/`: Next.js app, API routes, demo data, and UI
-- `backend/`: reserved backend workspace for extracted services, delivery helpers, or future runtime separation
-- `docs/`: team coordination and phase planning
+- `frontend/`: Next.js UI app and typed frontend data-access layer
+- `backend/`: Fastify TypeScript API and backend service layer
+- `shared/`: contracts shared by frontend and backend
+- `pipeline/`: Python ingestion, scraping, chunking, and extraction pipeline
+- `data/`: checked-in seed inputs for pipeline ingestion
+- `docs/`: team coordination, plans, and API documentation
+
+## Current architecture
+
+- `frontend/` is UI-only
+- `backend/` owns the active HTTP API surface
+- `shared/` holds contracts used by both apps
+- `pipeline/` is responsible for populating the ingestion schema in PostgreSQL
+- backend read-model endpoints project ingestion-table data into frontend-friendly payloads
 
 ## Team setup
 
-This repo is split into three strict ownership lanes. No one should edit another person's phase files.
+This repo is split into three strict ownership lanes. No one should edit another person's phase files without coordination.
 
 ### Frontend
 - Branch: `feat/frontend-ui`
@@ -20,8 +31,8 @@ This repo is split into three strict ownership lanes. No one should edit another
   - `frontend/components/landing-page.tsx`
   - `frontend/app/case/demo-child-a/page.tsx`
   - `frontend/components/dashboard-shell.tsx`
-  - `frontend/app/report/demo-child-a/page.tsx`
   - `frontend/components/report-page.tsx`
+  - `frontend/app/report/demo-child-a/page.tsx`
   - `frontend/app/globals.css`
   - `frontend/tailwind.config.ts`
 
@@ -29,48 +40,62 @@ This repo is split into three strict ownership lanes. No one should edit another
 - Branch: `feat/ai-rag-core`
 - Start with: Phase 1, then Phase 2, then Phase 7
 - Owns:
-  - `frontend/lib/types.ts`
   - `frontend/lib/view-types.ts`
-  - `frontend/lib/data.ts`
-  - `frontend/lib/logic.ts`
+  - `shared/types.ts`
+  - `shared/api.ts`
+  - pipeline-side extraction/schema logic as coordinated
 
 ### Backend
 - Branch: `feat/backend-delivery`
 - Start with: Phase 5, then Phase 8, then Phase 9
 - Owns:
-  - `frontend/app/api/cases/[caseId]/route.ts`
-  - `frontend/app/api/fragments/route.ts`
-  - `frontend/app/api/claims/route.ts`
-  - `frontend/app/api/report/[caseId]/route.ts`
-  - `frontend/app/layout.tsx`
-  - `frontend/package.json`
-  - `README.md`
-
-### Team rules
-- Phase 0 is discussion only.
-- `frontend/lib/types.ts` is frozen after the AI / RAG lane defines it.
-- No auth, uploads, or real database unless the current plan breaks.
-- Keep the demo centered on:
-  - `/`
-  - `/case/demo-child-a`
-  - `/report/demo-child-a`
+  - `backend/src/server.ts`
+  - `backend/src/routes.ts`
+  - `backend/src/service.ts`
+  - `backend/src/ingestion/`
+  - `backend/package.json`
+  - `backend/README.md`
+  - root integration docs
 
 ## Local development
 
+Start the backend:
+
 ```bash
-cd frontend
+cd backend
 npm install
 npm run dev
 ```
 
+In another terminal, start the frontend:
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Set in `frontend/.env.local`:
+
+```text
+BACKEND_BASE_URL=http://127.0.0.1:4000
+```
+
+If you are also running a local machine-level Postgres instance, keep the pipeline/container database on `5433` to avoid colliding with the default local `5432`.
+
 ## Local ingestion pipeline
+
+The repo also contains a local Python ingestion pipeline for PostgreSQL-backed source ingestion and extraction.
+
+Setup:
 
 ```bash
 cp .env.example .env
 pip install -r requirements.txt
 ```
 
-Planned pipeline commands for later tasks:
+Commands:
 
 ```bash
 python -m pipeline.main ensure-db
@@ -81,25 +106,38 @@ python -m pipeline.main extract
 python -m pipeline.main run-all
 ```
 
-## Included demo surfaces
+If `python -m pipeline.main extract` fails, confirm that `OPENAI_API_KEY` is set in `.env` and that the selected model is accessible from your account.
+
+## Included surfaces
 
 - `/` editorial landing page
-- `/case/demo-child-a` evidence dashboard
+- `/case/demo-child-a` evidence workbench
 - `/report/demo-child-a` report-style evidence brief
 
-## Included API routes
+## Included backend routes
 
-- `GET /api/cases/demo-child-a`
-- `GET /api/fragments?caseId=demo-child-a`
+- `GET /api/cases/:caseId`
+- `GET /api/fragments?caseId=...`
 - `POST /api/claims`
-- `GET /api/report/demo-child-a`
+- `GET /api/report/:caseId`
+- `GET /api/chart/trajectory/:caseId`
+- `GET /api/ingestion/seed-sources`
+- `GET /api/ingestion/source-documents`
+- `GET /api/ingestion/document-chunks`
+- `GET /api/ingestion/extraction-runs`
+- `GET /api/ingestion/extracted-datapoints`
+- `GET /api/ingestion/extraction-issues`
+- `GET /health`
 
 ## Data handling
 
-The hackathon build uses synthetic or de-identified local evidence fragments. It is for review support only and does not provide diagnosis, treatment, or approval recommendations.
+- The backend expects real ingestion data to be present in PostgreSQL.
+- The app is review support only and does not provide diagnosis, treatment guidance, or approval recommendations.
+- Production handling still requires de-identification review, encryption, auditability, and access controls.
 
-## Coordination docs
+## Key docs
 
-- `docs/TEAM_SHEET.md`
-- `docs/REPO_PHASES.md`
-- `docs/BRANCH_PLAN.md`
+- [docs/API_DOCUMENTATION.md](/c:/Users/risha/PiecesOfThem/docs/API_DOCUMENTATION.md:1)
+- [docs/TEAM_SHEET.md](/c:/Users/risha/PiecesOfThem/docs/TEAM_SHEET.md:1)
+- [docs/REPO_PHASES.md](/c:/Users/risha/PiecesOfThem/docs/REPO_PHASES.md:1)
+- [docs/BRANCH_PLAN.md](/c:/Users/risha/PiecesOfThem/docs/BRANCH_PLAN.md:1)
