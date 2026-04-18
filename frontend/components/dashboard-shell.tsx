@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { GetTrajectoryResponse } from "@shared/api";
@@ -49,7 +50,6 @@ const IS_AUDIO: Record<EvidenceFragment["sourceType"], boolean> = {
 };
 
 type FilterMode = "all" | SignalDomain;
-type GenState = "idle" | "generating" | "done";
 
 const DAYS_TO_DEADLINE = Math.ceil(
   (new Date("2026-09-19").getTime() - Date.now()) / 86_400_000,
@@ -158,7 +158,12 @@ export function DashboardShell({
       >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <span className="font-display text-xl tracking-[-0.02em] text-slate">PiecesOfThem</span>
+            <Link
+              href="/"
+              className="font-display text-xl tracking-[-0.02em] text-slate transition hover:text-terracotta"
+            >
+              PiecesOfThem
+            </Link>
             <span className="h-3.5 w-px bg-stone/40" />
             <span className="hidden text-xs uppercase tracking-[0.2em] text-slate/40 sm:block">
               Evidence Workbench
@@ -169,7 +174,15 @@ export function DashboardShell({
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-terracotta" />
               <span className="text-xs font-medium text-terracotta">{DAYS_TO_DEADLINE}d to Sep 19</span>
             </div>
-            <GenerateButton />
+            <nav className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="rounded-full border border-stone/30 bg-white/75 px-4 py-2 text-sm font-medium text-slate transition hover:border-stone/50 hover:bg-white"
+              >
+                Home
+              </Link>
+              <GenerateButton />
+            </nav>
           </div>
         </div>
       </header>
@@ -740,52 +753,13 @@ function EvidenceSidebar({
 }
 
 function GenerateButton() {
-  const [state, setState] = useState<GenState>("idle");
-
-  function handleClick() {
-    if (state !== "idle") {
-      return;
-    }
-
-    setState("generating");
-    window.setTimeout(() => setState("done"), 2400);
-    window.setTimeout(() => setState("idle"), 5500);
-  }
-
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className={`relative min-w-[220px] overflow-hidden rounded-full px-5 py-2.5 text-sm font-medium shadow-sm transition-all duration-300 ${
-        state === "done"
-          ? "bg-sage text-white"
-          : state === "generating"
-            ? "cursor-wait bg-terracotta/80 text-white"
-            : "bg-terracotta text-white hover:bg-oxidizedRose"
-      }`}
+    <Link
+      href="/report/demo-child-a"
+      className="inline-flex min-w-[220px] items-center justify-center rounded-full bg-terracotta px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-oxidizedRose"
     >
-      <span
-        className={`flex items-center justify-center gap-2 transition-opacity duration-200 ${
-          state === "idle" ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"
-        }`}
-      >
-        Generate Sept 19th Package
-      </span>
-      <span
-        className={`flex items-center justify-center gap-2 transition-opacity duration-200 ${
-          state === "generating" ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"
-        }`}
-      >
-        Assembling pieces…
-      </span>
-      <span
-        className={`flex items-center justify-center gap-2 transition-opacity duration-200 ${
-          state === "done" ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"
-        }`}
-      >
-        ✦ Package Ready
-      </span>
-    </button>
+      Generate Sept 19th Package
+    </Link>
   );
 }
 
