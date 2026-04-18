@@ -13,7 +13,3 @@ export function formatMonthYear(date: string) {
     year: "numeric",
   }).format(new Date(date));
 }
-
-export function sentenceCase(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}

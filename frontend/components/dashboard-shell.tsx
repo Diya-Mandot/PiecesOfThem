@@ -194,11 +194,7 @@ export function DashboardShell({
       </header>
 
       <main className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
-        <HeroQuote
-          fragment={pickHeroFragment(bundle.fragments)}
-          count={bundle.fragments.length}
-          claimCount={bundle.claims.length}
-        />
+        <HeroQuote />
 
         <RescueGapChart
           fragments={bundle.fragments}
@@ -330,33 +326,12 @@ export function DashboardShell({
         </section>
       </main>
 
-      {/* Model card footer */}
-      <footer className="mx-auto max-w-[1200px] px-6 py-8 flex justify-center">
-        <a href="#" className="flex items-center gap-2 rounded-full border border-stone/25 bg-white/60 px-5 py-2.5 text-xs text-slate/45 transition hover:border-stone/40 hover:text-slate/65 backdrop-blur-sm">
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-            <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.2"/>
-            <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-            <line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-            <line x1="4" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-          </svg>
-          View Model Card & Audit Trace
-        </a>
-      </footer>
-
       <EvidenceSidebar fragment={selectedFragment} onClose={() => setSelectedId(null)} />
     </div>
   );
 }
 
-function HeroQuote({
-  fragment,
-  count,
-  claimCount,
-}: {
-  fragment: EvidenceFragment | undefined;
-  count: number;
-  claimCount: number;
-}) {
+function HeroQuote() {
   return (
     <div
       className="relative overflow-hidden rounded-[2rem]"
@@ -511,22 +486,6 @@ function PieceCard({
         </div>
       </div>
     </button>
-  );
-}
-
-/** Pick the hero quote shown at the top of the workbench. */
-function pickHeroFragment(fragments: EvidenceFragment[]) {
-  const preferred = fragments.find((fragment) => fragment.id === "FRG-2025-188");
-  if (preferred) {
-    return preferred;
-  }
-
-  return (
-    fragments.find(
-      (fragment) =>
-        fragment.confidence === "high" &&
-        (fragment.signalDomain === "vocabulary" || fragment.signalDomain === "recognition"),
-    ) ?? fragments[0]
   );
 }
 
