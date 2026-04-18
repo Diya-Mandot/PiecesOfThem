@@ -30,58 +30,104 @@ const STEPS = [
   },
 ];
 
-// Ambient background — simplified stability gap that draws itself in
-function AmbientLine() {
-  // Treated line: gentle upward hold
-  const treated = "M -20 195 C 150 180, 320 162, 520 148 S 820 138, 1060 132 S 1300 128, 1460 126";
-  // Natural decline: falls away
-  const natural = "M -20 195 C 150 200, 320 210, 520 228 S 820 252, 1060 268 S 1300 278, 1460 285";
+const SIGNAL_ORBS = [
+  {
+    label: "speech retention",
+    style: {
+      top: "14%",
+      left: "8%",
+      width: "140px",
+      height: "140px",
+      animationDelay: "0s",
+      background:
+        "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.92), rgba(249,192,187,0.44) 48%, rgba(249,192,187,0.12) 74%, transparent 100%)",
+    },
+  },
+  {
+    label: "citation lineage",
+    style: {
+      top: "22%",
+      right: "11%",
+      width: "190px",
+      height: "190px",
+      animationDelay: "1.4s",
+      background:
+        "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(196,112,74,0.3) 45%, rgba(196,112,74,0.08) 72%, transparent 100%)",
+    },
+  },
+  {
+    label: "caregiver recognition",
+    style: {
+      bottom: "16%",
+      left: "12%",
+      width: "168px",
+      height: "168px",
+      animationDelay: "0.8s",
+      background:
+        "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.88), rgba(158,107,107,0.26) 48%, rgba(158,107,107,0.08) 76%, transparent 100%)",
+    },
+  },
+  {
+    label: "",
+    style: {
+      top: "34%",
+      left: "24%",
+      width: "86px",
+      height: "86px",
+      animationDelay: "2s",
+      background:
+        "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.86), rgba(122,158,135,0.22) 42%, rgba(122,158,135,0.06) 70%, transparent 100%)",
+    },
+  },
+  {
+    label: "sleep stability",
+    style: {
+      bottom: "12%",
+      right: "9%",
+      width: "156px",
+      height: "156px",
+      animationDelay: "1.8s",
+      background:
+        "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(122,158,135,0.26) 48%, rgba(122,158,135,0.08) 76%, transparent 100%)",
+    },
+  },
+];
 
+function SignalOrbs() {
   return (
     <>
       <style>{`
-        @keyframes drawTreated {
-          from { stroke-dashoffset: 1600; }
-          to   { stroke-dashoffset: 0; }
+        @keyframes orbFloat {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(0, -14px, 0) scale(1.04); }
         }
-        @keyframes drawNatural {
-          from { stroke-dashoffset: 1600; }
-          to   { stroke-dashoffset: 0; }
+        @keyframes orbPulse {
+          0%, 100% { opacity: 0.82; }
+          50% { opacity: 1; }
         }
-        .ambient-treated { stroke-dasharray: 1600; animation: drawTreated 5s 0.4s cubic-bezier(.4,0,.2,1) forwards; stroke-dashoffset: 1600; }
-        .ambient-natural { stroke-dasharray: 1600; animation: drawNatural 5s 0.8s cubic-bezier(.4,0,.2,1) forwards; stroke-dashoffset: 1600; }
       `}</style>
-      <svg
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 h-full w-full"
-        aria-hidden="true"
-      >
-        {/* Gap fill between lines */}
-        <path
-          d={`${treated} L 1460 285 C 1300 278, 1060 268, 820 252 S 520 228, 320 210 S 150 200, -20 195 Z`}
-          fill="rgba(122,158,135,0.04)"
-        />
-        {/* Natural decline — faint grey */}
-        <path
-          d={natural}
-          fill="none"
-          stroke="#C7B7A7"
-          strokeWidth="1.2"
-          opacity="0.35"
-          className="ambient-natural"
-        />
-        {/* Treated — sage dashed */}
-        <path
-          d={treated}
-          fill="none"
-          stroke="#7A9E87"
-          strokeWidth="1.8"
-          strokeDasharray="10 7"
-          opacity="0.3"
-          className="ambient-treated"
-        />
-      </svg>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        {SIGNAL_ORBS.map((orb, index) => (
+          <div
+            key={`${orb.label}-${index}`}
+            className="absolute rounded-full blur-[1px]"
+            style={{
+              ...orb.style,
+              animation: `orbFloat ${11 + index * 1.2}s ease-in-out infinite, orbPulse ${7 + index}s ease-in-out infinite`,
+            }}
+          >
+            <div className="absolute inset-0 rounded-full border border-white/35" />
+            <div className="absolute inset-[16%] rounded-full border border-white/18" />
+            {orb.label ? (
+              <div className="absolute inset-0 flex items-center justify-center px-5 text-center">
+                <span className="text-[10px] uppercase tracking-[0.28em] text-slate/42">
+                  {orb.label}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
     </>
   );
 }
@@ -103,7 +149,7 @@ export function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="relative flex min-h-[88vh] flex-col items-center justify-center overflow-hidden px-8 py-20 text-center lg:px-16">
-        <AmbientLine />
+        <SignalOrbs />
 
         <div className="relative z-10 flex flex-col items-center">
           {/* Urgency pill */}
@@ -148,26 +194,6 @@ export function LandingPage() {
             <p className="text-[11px] uppercase tracking-[0.28em] text-slate/35">Sanfilippo MPS IIIA · UX111</p>
             <div className="h-px w-16 bg-stone/30" />
           </div>
-        </div>
-      </section>
-
-      {/* ── PULL QUOTE ── */}
-      <section className="relative overflow-hidden py-28">
-        <img
-          src="https://picsum.photos/seed/warmfamily/1400/600"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "blur(6px) saturate(0.7)", transform: "scale(1.06)" }}
-        />
-        <div className="absolute inset-0" style={{
-          background: "linear-gradient(135deg, rgba(251,246,241,0.93) 0%, rgba(243,216,210,0.88) 50%, rgba(251,246,241,0.93) 100%)"
-        }} />
-        <div className="relative mx-auto max-w-3xl px-8 text-center lg:px-14">
-          <p className="mb-6 text-xs uppercase tracking-[0.3em] text-slate/40">A piece, translated</p>
-          <blockquote className="font-newsreader text-3xl leading-[1.3] text-slate lg:text-5xl" style={{ fontStyle: "italic" }}>
-            &ldquo;He asked for his favourite song by name. We hadn&apos;t heard him speak in eight months.&rdquo;
-          </blockquote>
-          <p className="mt-6 text-sm text-slate/45">— Caregiver transcript · August 2025 · Speech domain · Confidence 91%</p>
         </div>
       </section>
 
