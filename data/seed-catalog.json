@@ -587,5 +587,81 @@
       "complex play"
     ],
     "notes": "Helpful for broadening cross-trial comparisons around early dosing and preserved development without overstating named-patient provenance."
+  },
+  {
+    "id": "PSS-012",
+    "kind": "public-source",
+    "label": "Reflections of a Sanfilippo Dad: 5 Years Post-Diagnosis",
+    "sourceUrls": [
+      "https://www.thecantoncitizen.com/2024/06/14/reflections-of-a-sanfilippo-dad-5-years-post-diagnosis/"
+    ],
+    "platform": "The Canton Citizen",
+    "access": "public",
+    "subjectLabel": "Connor Dobbyn",
+    "childAgeSignal": "teenager",
+    "diseaseSubtype": "MPS-IIIC",
+    "trialProgram": "Phoenix Nest",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "public-source",
+    "namedPublicly": true,
+    "confirmedParticipation": false,
+    "sourceType": "newspaper-family-story",
+    "authorRole": "parent-father",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "caregiver-mental-health",
+      "treatment-advocacy",
+      "natural-history"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "low",
+    "consentRisk": "low",
+    "comparisonUse": "natural-history",
+    "evidenceSummary": "Mike Dobbyn's 5-year post-diagnosis reflection for son Connor (MPS IIIC). Documents caregiver grief arc, survival past 'early to late teens' prognosis, and clinical trial pursuit via Phoenix Nest. Cross-subtype natural history reference.",
+    "outcomeSignals": [
+      "5-year survival past projected prognosis window",
+      "preserved caregiver recognition",
+      "clinical trial engagement"
+    ],
+    "notes": "Named family, publicly identified. High extraction value for caregiver psychological impact and natural history benchmarking across MPS III subtypes."
+  },
+  {
+    "id": "PSS-013",
+    "kind": "public-source",
+    "label": "A Year After Going Public With Son's Sanfilippo Diagnosis",
+    "sourceUrls": [
+      "https://curesanfilippofoundation.org/2020/08/a-year-after-going-public-with-sons-sanfilippo-diagnosis/"
+    ],
+    "platform": "Cure Sanfilippo Foundation",
+    "access": "public",
+    "subjectLabel": "Connor Dobbyn",
+    "childAgeSignal": "child",
+    "diseaseSubtype": "MPS-IIIC",
+    "trialProgram": "Phoenix Nest",
+    "interventionClass": "gene-therapy",
+    "sourceConfidence": "public-source",
+    "namedPublicly": true,
+    "confirmedParticipation": false,
+    "sourceType": "nonprofit-family-story",
+    "authorRole": "parent-mother",
+    "symptomDomains": [
+      "diagnosis-journey",
+      "caregiver-mental-health",
+      "treatment-advocacy",
+      "care-burden"
+    ],
+    "temporalSignal": "longitudinal",
+    "extractionValue": "high",
+    "scrapeDifficulty": "low",
+    "consentRisk": "low",
+    "comparisonUse": "natural-history",
+    "evidenceSummary": "Marisa Dobbyn's 1-year post-disclosure reflection (Aug 2020). Documents mother's grief processing, unexpected community mobilization, and $5M clinical trial funding gap exacerbated by COVID-19. Cross-subtype caregiver evidence.",
+    "outcomeSignals": [
+      "community mobilization response",
+      "caregiver grief and recovery arc",
+      "clinical trial funding urgency"
+    ],
+    "notes": "Named family, publicly identified. Paired with PSS-012 (Mike Dobbyn) for longitudinal caregiver arc across the same case. Strong extraction value for emotional and advocacy signals."
   }
 ]
