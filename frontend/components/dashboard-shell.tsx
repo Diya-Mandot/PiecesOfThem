@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { GetTrajectoryResponse } from "@shared/api";
 import type { CaseBundle, EvidenceFragment, SignalDomain } from "@shared/types";
@@ -65,14 +65,80 @@ export function DashboardShell({
   const [hoveredChartId, setHoveredChartId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [rankedIds, setRankedIds] = useState<string[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const selectedFragment = selectedId
     ? bundle.fragments.find((fragment) => fragment.id === selectedId) ?? null
     : null;
 
-  const filtered = bundle.fragments.filter(
-    (fragment) => filterMode === "all" || fragment.signalDomain === filterMode,
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setRankedIds(null);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: searchQuery,
+            fragments: bundle.fragments.map((fragment) => ({
+              id: fragment.id,
+              title: fragment.title,
+              excerpt: fragment.excerpt,
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Search request failed");
+        }
+
+        const data = (await response.json()) as {
+          ranked: { id: string; score: number }[];
+        };
+
+        setRankedIds(data.ranked.map((item) => item.id));
+      } catch {
+        setRankedIds(null);
+      } finally {
+        setSearching(false);
+      }
+    }, 420);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, bundle.fragments]);
+
+  const domainFiltered = useMemo(
+    () =>
+      bundle.fragments.filter(
+        (fragment) => filterMode === "all" || fragment.signalDomain === filterMode,
+      ),
+    [bundle.fragments, filterMode],
   );
+
+  const filtered = useMemo(() => {
+    if (!rankedIds) {
+      return domainFiltered;
+    }
+
+    const byId = new Map(domainFiltered.map((fragment) => [fragment.id, fragment]));
+
+    return rankedIds
+      .map((id) => byId.get(id))
+      .filter((fragment): fragment is EvidenceFragment => Boolean(fragment));
+  }, [domainFiltered, rankedIds]);
+
+  const activeSearch = searchQuery.trim();
+  const activeDomainLabel = filterMode === "all" ? "All domains" : DOMAIN_LABEL[filterMode];
+  const searchMode = activeSearch.length > 0;
 
   function selectPiece(id: string) {
     setSelectedId((previous) => (previous === id ? null : id));
@@ -109,17 +175,13 @@ export function DashboardShell({
       </header>
 
       <main className="mx-auto max-w-[1200px] space-y-8 px-6 py-8">
-        <HeroQuote fragment={bundle.fragments[0]} count={bundle.fragments.length} />
+        <HeroQuote
+          fragment={bundle.fragments[0]}
+          count={bundle.fragments.length}
+          claimCount={bundle.claims.length}
+        />
 
-        <div className="flex items-center gap-3 rounded-[1rem] border border-sage/25 bg-sage/10 px-4 py-3">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sage/20 text-xs font-medium text-sage">
-            →
-          </span>
-          <p className="text-sm text-slate/60">
-            <span className="font-medium text-slate">How to use:</span> Hover the chart to see
-            which stories support each point. Click any piece card to open its regulatory mapping.
-          </p>
-        </div>
+        <WorkflowStrip />
 
         <RescueGapChart
           fragments={bundle.fragments}
@@ -129,59 +191,146 @@ export function DashboardShell({
           onSelect={selectPiece}
         />
 
-        <div>
+        <section className="rounded-[2rem] border border-stone/20 bg-white/45 p-5 shadow-whisper backdrop-blur-[2px] sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl text-slate">The Pieces</h2>
               <p className="mt-0.5 text-sm text-slate/45">
-                {filtered.length} structured fragments projected from the ingestion pipeline
+                {searchMode
+                  ? `${filtered.length} fragments ranked semantically for "${activeSearch}"`
+                  : `${filtered.length} structured fragments projected from the ingestion pipeline`}
               </p>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(["all", "vocabulary", "recognition", "sleep", "behavior", "motor"] as FilterMode[]).map(
-                (mode) => {
-                  const dot = mode !== "all" ? DOMAIN_DOT[mode as SignalDomain] : undefined;
-                  const label = mode === "all" ? "All" : DOMAIN_LABEL[mode as SignalDomain];
-                  const active = filterMode === mode;
+            <div className="flex flex-col items-stretch gap-2.5 sm:items-end">
+              <div className="relative w-full sm:w-[320px]">
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate/35"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                >
+                  <circle cx="6" cy="6" r="4.25" stroke="currentColor" strokeWidth="1.3" />
+                  <line
+                    x1="9.5"
+                    y1="9.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Semantic search the evidence"
+                  className="w-full rounded-full border border-stone/30 bg-white/90 py-2.5 pl-9 pr-10 text-sm text-slate shadow-sm placeholder:text-slate/35 focus:border-sage/50 focus:outline-none focus:ring-2 focus:ring-sage/20"
+                />
+                {searching ? (
+                  <svg
+                    className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate/30"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                  >
+                    <circle
+                      cx="7"
+                      cy="7"
+                      r="5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeDasharray="10 6"
+                    />
+                  </svg>
+                ) : searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate/35 transition hover:text-slate/70"
+                    aria-label="Clear semantic search"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </div>
 
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setFilterMode(mode)}
-                      className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                        active
-                          ? "border-transparent text-white shadow-sm"
-                          : "border-stone/35 bg-white/70 text-slate/55 hover:border-stone/55"
-                      }`}
-                      style={active ? { background: dot ?? "#2C2930" } : undefined}
-                    >
-                      {dot ? (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ background: active ? "white" : dot, opacity: active ? 0.8 : 1 }}
-                        />
-                      ) : null}
-                      {label}
-                    </button>
-                  );
-                },
-              )}
+              <div className="flex flex-wrap gap-1.5">
+                {(["all", "vocabulary", "recognition", "sleep", "behavior", "motor"] as FilterMode[]).map(
+                  (mode) => {
+                    const dot = mode !== "all" ? DOMAIN_DOT[mode as SignalDomain] : undefined;
+                    const label = mode === "all" ? "All" : DOMAIN_LABEL[mode as SignalDomain];
+                    const active = filterMode === mode;
+
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setFilterMode(mode)}
+                        className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                          active
+                            ? "border-transparent text-white shadow-sm"
+                            : "border-stone/35 bg-white/70 text-slate/55 hover:border-stone/55"
+                        }`}
+                        style={active ? { background: dot ?? "#2C2930" } : undefined}
+                      >
+                        {dot ? (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{
+                              background: active ? "white" : dot,
+                              opacity: active ? 0.8 : 1,
+                            }}
+                          />
+                        ) : null}
+                        {label}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((fragment) => (
-              <PieceCard
-                key={fragment.id}
-                fragment={fragment}
-                highlighted={hoveredChartId === fragment.id}
-                selected={selectedId === fragment.id}
-                onSelect={selectPiece}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <StatusChip label={activeDomainLabel} tone="neutral" />
+            {searchMode ? (
+              <StatusChip
+                label={searching ? "Ranking semantically..." : `Semantic mode: ${activeSearch}`}
+                tone="accent"
               />
-            ))}
+            ) : (
+              <StatusChip label="Chronological browse mode" tone="neutral" />
+            )}
+            {!searching && filtered[0] && searchMode ? (
+              <StatusChip label={`Top match: ${filtered[0].title}`} tone="soft" />
+            ) : null}
           </div>
-        </div>
+
+          {filtered.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((fragment, index) => (
+                <PieceCard
+                  key={fragment.id}
+                  fragment={fragment}
+                  highlighted={hoveredChartId === fragment.id}
+                  selected={selectedId === fragment.id}
+                  rankLabel={searchMode ? `#${index + 1}` : null}
+                  onSelect={selectPiece}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyPiecesState
+              searchMode={searchMode}
+              query={activeSearch}
+              onResetSearch={() => setSearchQuery("")}
+              onResetFilter={() => setFilterMode("all")}
+            />
+          )}
+        </section>
       </main>
 
       <EvidenceSidebar fragment={selectedFragment} onClose={() => setSelectedId(null)} />
@@ -189,7 +338,15 @@ export function DashboardShell({
   );
 }
 
-function HeroQuote({ fragment, count }: { fragment: EvidenceFragment | undefined; count: number }) {
+function HeroQuote({
+  fragment,
+  count,
+  claimCount,
+}: {
+  fragment: EvidenceFragment | undefined;
+  count: number;
+  claimCount: number;
+}) {
   return (
     <div
       className="relative overflow-hidden rounded-[2rem] border border-petalPink/40"
@@ -198,28 +355,62 @@ function HeroQuote({ fragment, count }: { fragment: EvidenceFragment | undefined
           "radial-gradient(ellipse at left, rgba(249,192,187,0.55) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(196,112,74,0.12) 0%, transparent 50%), linear-gradient(135deg, #FBF6F1 0%, #F0E0D6 100%)",
       }}
     >
-      <div className="relative grid gap-8 px-8 py-10 lg:grid-cols-[1fr_auto]">
+      <div className="relative grid gap-8 px-8 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-rosewood/60">
-            A piece, translated
+          <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-rosewood/60">
+            Regulatory evidence workbench
           </p>
-          <blockquote className="font-display text-4xl leading-[1.15] tracking-[-0.02em] text-slate sm:text-5xl">
-            &ldquo;{fragment?.excerpt ?? "No excerpt available."}&rdquo;
-          </blockquote>
-          <p className="mt-5 text-sm text-slate/50">
-            — {fragment?.sourceType ?? "Evidence fragment"}, {fragment ? formatMonthYear(fragment.date) : ""}
+          <h1 className="max-w-3xl font-display text-4xl leading-[1.02] tracking-[-0.03em] text-slate sm:text-[3.6rem]">
+            Traceable lived-experience evidence for rare disease review.
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate/63">
+            PiecesOfThem assembles caregiver observations into functional signals, aligns them to
+            time, and keeps every surfaced claim anchored to a source fragment.
           </p>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <StatusChip label="FDA-facing review context" tone="accent" />
+            <StatusChip label="Temporal-semantic retrieval" tone="soft" />
+            <StatusChip label="Citation lineage preserved" tone="neutral" />
+          </div>
+          <div className="mt-7 rounded-[1.4rem] border border-white/55 bg-white/60 px-5 py-4 shadow-whisper backdrop-blur-sm">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">
+              Selected source fragment
+            </p>
+            <blockquote className="mt-2 font-display text-2xl leading-snug text-slate">
+              &ldquo;{fragment?.excerpt ?? "No excerpt available."}&rdquo;
+            </blockquote>
+            <p className="mt-3 text-sm text-slate/50">
+              {fragment?.sourceType ?? "Evidence fragment"}
+              {fragment ? ` · ${formatMonthYear(fragment.date)}` : ""}
+            </p>
+          </div>
         </div>
 
-        <div className="flex shrink-0 flex-col justify-center gap-4 lg:items-end">
+        <div className="flex shrink-0 flex-col gap-3">
           {[
-            { label: "Pieces collected", value: String(count) },
-            { label: "Domains covered", value: "5" },
-            { label: "Days to deadline", value: String(DAYS_TO_DEADLINE) },
-          ].map(({ label, value }) => (
-            <div key={label} className="text-right">
-              <p className="font-display text-4xl text-slate">{value}</p>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate/40">{label}</p>
+            {
+              label: "Projected pieces",
+              value: String(count),
+              note: "Structured fragments surfaced from the current pipeline run",
+            },
+            {
+              label: "Claims assembled",
+              value: String(claimCount),
+              note: "Reviewer-facing findings anchored to the underlying source set",
+            },
+            {
+              label: "Deadline window",
+              value: `${DAYS_TO_DEADLINE}d`,
+              note: "Days remaining until the September 19, 2026 decision date",
+            },
+          ].map(({ label, value, note }) => (
+            <div
+              key={label}
+              className="rounded-[1.4rem] border border-white/50 bg-white/62 px-5 py-4 shadow-whisper backdrop-blur-sm"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate/40">{label}</p>
+              <p className="mt-1 font-display text-4xl text-slate">{value}</p>
+              <p className="mt-2 text-sm leading-6 text-slate/52">{note}</p>
             </div>
           ))}
         </div>
@@ -228,15 +419,45 @@ function HeroQuote({ fragment, count }: { fragment: EvidenceFragment | undefined
   );
 }
 
+function WorkflowStrip() {
+  const steps = [
+    {
+      label: "1. Surface",
+      text: "Ingest parent observations, transcripts, and public case signals into evidence fragments.",
+    },
+    {
+      label: "2. Rank",
+      text: "Retrieve the strongest pieces by meaning, domain, and time window.",
+    },
+    {
+      label: "3. Audit",
+      text: "Inspect every claim with direct source lineage before packaging for review.",
+    },
+  ];
+
+  return (
+    <div className="grid gap-3 rounded-[1.5rem] border border-stone/20 bg-white/55 p-4 shadow-whisper sm:grid-cols-3">
+      {steps.map((step) => (
+        <div key={step.label} className="rounded-[1.15rem] border border-stone/15 bg-parchment/65 px-4 py-4">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-terracotta">{step.label}</p>
+          <p className="mt-2 text-sm leading-6 text-slate/62">{step.text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PieceCard({
   fragment,
   highlighted,
   selected,
+  rankLabel,
   onSelect,
 }: {
   fragment: EvidenceFragment;
   highlighted: boolean;
   selected: boolean;
+  rankLabel: string | null;
   onSelect: (id: string) => void;
 }) {
   const dot = DOMAIN_DOT[fragment.signalDomain];
@@ -278,6 +499,11 @@ function PieceCard({
         <div className="absolute right-3 top-3 rounded-full border border-white/50 bg-white/80 px-2.5 py-1 text-[10px] text-slate/55 backdrop-blur-sm">
           {formatMonthYear(fragment.date)}
         </div>
+        {rankLabel ? (
+          <div className="absolute bottom-3 left-3 rounded-full border border-white/60 bg-white/85 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate/60 backdrop-blur-sm">
+            {rankLabel}
+          </div>
+        ) : null}
       </div>
 
       <div className="p-4 pt-3">
@@ -286,7 +512,7 @@ function PieceCard({
           <span className="text-[11px] uppercase tracking-[0.18em]">{SOURCE_LABEL[fragment.sourceType]}</span>
         </div>
         <p className="font-display text-lg leading-snug text-slate">{fragment.title}</p>
-        <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-slate/55">{fragment.excerpt}</p>
+        <p className="mt-1.5 text-sm leading-6 text-slate/55">{fragment.excerpt}</p>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] uppercase tracking-[0.12em]"
@@ -303,6 +529,73 @@ function PieceCard({
         </div>
       </div>
     </button>
+  );
+}
+
+function StatusChip({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "neutral" | "accent" | "soft";
+}) {
+  const className =
+    tone === "accent"
+      ? "border-terracotta/25 bg-terracotta/10 text-terracotta"
+      : tone === "soft"
+        ? "border-petalPink/35 bg-petalPink/12 text-rosewood/70"
+        : "border-stone/25 bg-white/70 text-slate/55";
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function EmptyPiecesState({
+  searchMode,
+  query,
+  onResetSearch,
+  onResetFilter,
+}: {
+  searchMode: boolean;
+  query: string;
+  onResetSearch: () => void;
+  onResetFilter: () => void;
+}) {
+  return (
+    <div className="rounded-[1.6rem] border border-dashed border-stone/30 bg-parchment/70 px-6 py-10 text-center">
+      <p className="text-[11px] uppercase tracking-[0.24em] text-slate/40">No projected fragments</p>
+      <h3 className="mt-2 font-display text-2xl text-slate">
+        {searchMode ? "No evidence matched that query" : "No fragments for this filter"}
+      </h3>
+      <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate/55">
+        {searchMode
+          ? `The current dataset did not yield semantic matches for "${query}" inside the active domain filter.`
+          : "The current domain filter does not have surfaced fragments yet. Reset the filter to review the full evidence pool."}
+      </p>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        {searchMode ? (
+          <button
+            type="button"
+            onClick={onResetSearch}
+            className="rounded-full border border-stone/30 bg-white px-4 py-2 text-sm text-slate transition hover:border-stone/50"
+          >
+            Clear search
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onResetFilter}
+          className="rounded-full bg-terracotta px-4 py-2 text-sm text-white transition hover:bg-oxidizedRose"
+        >
+          Show all domains
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -390,7 +683,9 @@ function EvidenceSidebar({
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div className="rounded-[1.3rem] border border-stone/25 bg-white px-5 py-5">
             <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate/40">Human Story</p>
-            <p className="font-display text-xl leading-relaxed text-slate">&ldquo;{fragment?.excerpt}&rdquo;</p>
+            <p className="whitespace-pre-wrap break-words font-display text-xl leading-relaxed text-slate">
+              &ldquo;{fragment?.excerpt}&rdquo;
+            </p>
             <p className="mt-3 text-xs text-slate/35">{fragment?.rawRef}</p>
           </div>
 

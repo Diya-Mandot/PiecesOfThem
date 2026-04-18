@@ -45,7 +45,7 @@ export class ProjectionRepository {
     }
 
     if (caseId === "demo-child-a") {
-      return candidates[0].subject_label;
+      return pickDemoCandidate(candidates)?.subject_label ?? candidates[0].subject_label;
     }
 
     const exact = candidates.find((candidate) => slugify(candidate.subject_label) === caseId);
@@ -125,6 +125,57 @@ export class ProjectionRepository {
       };
     });
   }
+}
+
+function pickDemoCandidate(candidates: SubjectCandidate[]) {
+  const preferred = candidates
+    .filter((candidate) => !isGenericSubjectLabel(candidate.subject_label))
+    .filter(
+      (candidate) =>
+        candidate.functional_count > 0 || candidate.claim_count > 0 || candidate.trial_count > 0,
+    );
+
+  if (preferred.length === 0) {
+    return null;
+  }
+
+  return preferred
+    .slice()
+    .sort((left, right) => {
+      const scoreDelta = scoreDemoCandidate(right) - scoreDemoCandidate(left);
+      if (scoreDelta !== 0) {
+        return scoreDelta;
+      }
+
+      return left.subject_label.localeCompare(right.subject_label);
+    })[0];
+}
+
+function scoreDemoCandidate(candidate: SubjectCandidate) {
+  return (
+    candidate.functional_count * 100 +
+    candidate.claim_count * 100 +
+    candidate.trial_count * 25 +
+    candidate.datapoint_count
+  );
+}
+
+function isGenericSubjectLabel(label: string) {
+  const normalized = label.trim().toLowerCase();
+
+  const genericLabels = new Set([
+    "children",
+    "families",
+    "four children",
+    "the treated children",
+    "team sanfilippo foundation",
+    "calling all caregivers",
+    "sanfilippo syndrome",
+    "sanfilippo syndrome / sanfilippo disease",
+    "the journal lancet neurology",
+  ]);
+
+  return genericLabels.has(normalized);
 }
 
 function mapProjectionRow(record: Record<string, unknown>): ProjectionRow {
