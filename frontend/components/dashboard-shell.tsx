@@ -189,12 +189,10 @@ export function DashboardShell({
 
       <main className="mx-auto max-w-[1200px] space-y-8 px-6 py-8">
         <HeroQuote
-          fragment={bundle.fragments[0]}
+          fragment={pickHeroFragment(bundle.fragments)}
           count={bundle.fragments.length}
           claimCount={bundle.claims.length}
         />
-
-        <WorkflowStrip />
 
         <RescueGapChart
           fragments={bundle.fragments}
@@ -368,94 +366,32 @@ function HeroQuote({
           "radial-gradient(ellipse at left, rgba(249,192,187,0.55) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(196,112,74,0.12) 0%, transparent 50%), linear-gradient(135deg, #FBF6F1 0%, #F0E0D6 100%)",
       }}
     >
-      <div className="relative grid gap-8 px-8 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="relative px-8 py-9">
         <div>
-          <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-rosewood/60">
-            Regulatory evidence workbench
+          <p className="mb-4 text-[11px] uppercase tracking-[0.28em] text-rosewood/55">
+            A piece, translated
           </p>
-          <h1 className="max-w-3xl font-display text-4xl leading-[1.02] tracking-[-0.03em] text-slate sm:text-[3.6rem]">
-            Traceable lived-experience evidence for rare disease review.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate/63">
-            PiecesOfThem assembles caregiver observations into functional signals, aligns them to
-            time, and keeps every surfaced claim anchored to a source fragment.
+          <blockquote className="max-w-5xl font-display text-[2.3rem] leading-[1.08] tracking-[-0.03em] text-slate sm:text-[3.6rem]">
+            &ldquo;{fragment?.excerpt ?? "No excerpt available."}&rdquo;
+          </blockquote>
+          <p className="mt-5 text-sm text-slate/50">
+            {fragment?.sourceType ?? "Evidence fragment"}
+            {fragment ? ` · ${formatMonthYear(fragment.date)}` : ""}
+            {fragment?.rawRef ? ` · ${fragment.rawRef}` : ""}
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <StatusChip label="FDA-facing review context" tone="accent" />
-            <StatusChip label="Temporal-semantic retrieval" tone="soft" />
-            <StatusChip label="Citation lineage preserved" tone="neutral" />
-          </div>
-          <div className="mt-7 rounded-[1.4rem] border border-white/55 bg-white/60 px-5 py-4 shadow-whisper backdrop-blur-sm">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">
-              Selected source fragment
-            </p>
-            <blockquote className="mt-2 font-display text-2xl leading-snug text-slate">
-              &ldquo;{fragment?.excerpt ?? "No excerpt available."}&rdquo;
-            </blockquote>
-            <p className="mt-3 text-sm text-slate/50">
-              {fragment?.sourceType ?? "Evidence fragment"}
-              {fragment ? ` · ${formatMonthYear(fragment.date)}` : ""}
-            </p>
-          </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-2.5">
           {[
-            {
-              label: "Projected pieces",
-              value: String(count),
-              note: "Structured fragments surfaced from the current pipeline run",
-            },
-            {
-              label: "Claims assembled",
-              value: String(claimCount),
-              note: "Reviewer-facing findings anchored to the underlying source set",
-            },
-            {
-              label: "Deadline window",
-              value: `${DAYS_TO_DEADLINE}d`,
-              note: "Days remaining until the September 19, 2026 decision date",
-            },
-          ].map(({ label, value, note }) => (
-            <div
-              key={label}
-              className="rounded-[1.4rem] border border-white/50 bg-white/62 px-5 py-4 shadow-whisper backdrop-blur-sm"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate/40">{label}</p>
-              <p className="mt-1 font-display text-4xl text-slate">{value}</p>
-              <p className="mt-2 text-sm leading-6 text-slate/52">{note}</p>
-            </div>
+            { label: `${count} pieces`, tone: "neutral" as const },
+            { label: `${claimCount} claims`, tone: "neutral" as const },
+            { label: `${DAYS_TO_DEADLINE}d to Sep 19`, tone: "accent" as const },
+            { label: "Each claim links back to source fragments", tone: "soft" as const },
+          ].map(({ label, tone }) => (
+            <StatusChip key={label} label={label} tone={tone} />
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function WorkflowStrip() {
-  const steps = [
-    {
-      label: "1. Surface",
-      text: "Ingest parent observations, transcripts, and public case signals into evidence fragments.",
-    },
-    {
-      label: "2. Rank",
-      text: "Retrieve the strongest pieces by meaning, domain, and time window.",
-    },
-    {
-      label: "3. Audit",
-      text: "Inspect every claim with direct source lineage before packaging for review.",
-    },
-  ];
-
-  return (
-    <div className="grid gap-3 rounded-[1.5rem] border border-stone/20 bg-white/55 p-4 shadow-whisper sm:grid-cols-3">
-      {steps.map((step) => (
-        <div key={step.label} className="rounded-[1.15rem] border border-stone/15 bg-parchment/65 px-4 py-4">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-terracotta">{step.label}</p>
-          <p className="mt-2 text-sm leading-6 text-slate/62">{step.text}</p>
-        </div>
-      ))}
     </div>
   );
 }
@@ -565,6 +501,21 @@ function StatusChip({
     >
       {label}
     </span>
+  );
+}
+
+function pickHeroFragment(fragments: EvidenceFragment[]) {
+  const preferred = fragments.find((fragment) => fragment.id === "FRG-2025-188");
+  if (preferred) {
+    return preferred;
+  }
+
+  return (
+    fragments.find(
+      (fragment) =>
+        fragment.confidence === "high" &&
+        (fragment.signalDomain === "vocabulary" || fragment.signalDomain === "recognition"),
+    ) ?? fragments[0]
   );
 }
 
