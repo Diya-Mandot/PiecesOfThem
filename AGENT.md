@@ -196,14 +196,14 @@ Assigned phases:
 - Phase 6: Evidence brief
 
 Owned files:
-- `app/page.tsx`
-- `components/landing-page.tsx`
-- `app/case/demo-child-a/page.tsx`
-- `components/dashboard-shell.tsx`
-- `app/report/demo-child-a/page.tsx`
-- `components/report-page.tsx`
-- `app/globals.css`
-- `tailwind.config.ts`
+- `frontend/app/page.tsx`
+- `frontend/components/landing-page.tsx`
+- `frontend/app/case/demo-child-a/page.tsx`
+- `frontend/components/dashboard-shell.tsx`
+- `frontend/app/report/demo-child-a/page.tsx`
+- `frontend/components/report-page.tsx`
+- `frontend/app/globals.css`
+- `frontend/tailwind.config.ts`
 
 ### Person 2: AI / RAG-Only Phases
 
@@ -213,10 +213,9 @@ Assigned phases:
 - Phase 7: AI / RAG enhancement
 
 Owned files:
-- `lib/types.ts`
-- `lib/view-types.ts`
-- `lib/data.ts`
-- `lib/logic.ts`
+- `shared/types.ts`
+- `shared/api.ts`
+- `frontend/lib/view-types.ts`
 
 ### Person 3: Backend-Only Phases
 
@@ -272,14 +271,14 @@ Primary responsibility:
 - visual encoding of evidence, retention, and contrast against natural history
 
 Primary files:
-- `app/page.tsx`
-- `components/landing-page.tsx`
-- `app/case/demo-child-a/page.tsx`
-- `components/dashboard-shell.tsx`
-- `app/report/demo-child-a/page.tsx`
-- `components/report-page.tsx`
-- `app/globals.css`
-- `tailwind.config.ts`
+- `frontend/app/page.tsx`
+- `frontend/components/landing-page.tsx`
+- `frontend/app/case/demo-child-a/page.tsx`
+- `frontend/components/dashboard-shell.tsx`
+- `frontend/app/report/demo-child-a/page.tsx`
+- `frontend/components/report-page.tsx`
+- `frontend/app/globals.css`
+- `frontend/tailwind.config.ts`
 
 Frontend guidance:
 - The interface should feel editorial, clinical, and calm.
@@ -295,10 +294,9 @@ Primary responsibility:
 - evidence scoring, grouping, and synthesis support
 
 Primary files:
-- `lib/types.ts`
-- `lib/view-types.ts`
-- `lib/data.ts`
-- `lib/logic.ts`
+- `shared/types.ts`
+- `shared/api.ts`
+- `frontend/lib/view-types.ts`
 
 AI / RAG guidance:
 - Retrieval logic must preserve time awareness.
@@ -318,6 +316,11 @@ Backend guidance:
 - Integration code should preserve identifiers and traceability across transformations.
 - Delivery paths must make it easy to inspect how a visible report artifact was produced.
 - Packaging should favor reproducibility and low-friction demo setup.
+
+Current runtime note:
+- the backend API surface lives in `backend/src/`
+- the frontend consumes backend data through `frontend/lib/api.ts`
+- shared contracts live in `shared/`
 
 ## Definition Of Done
 

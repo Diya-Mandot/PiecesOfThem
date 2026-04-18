@@ -56,3 +56,18 @@ export type CaseBundle = {
   fragments: EvidenceFragment[];
   claims: Claim[];
 };
+
+export type TrajectoryPoint = {
+  fragmentId: string;
+  date: string;
+  treatedScore: number;
+  naturalScore: number;
+};
+
+export type TrajectoryKpis = {
+  retentionDelta: number;
+  retentionDeltaDisplay: string;
+  pValue: string;
+  pLabel: string;
+  observationMonths: number;
+};

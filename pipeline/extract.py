@@ -204,7 +204,6 @@ def _rollback_before_failure_logging(connection: Any) -> None:
     try:
         connection.rollback()
     except Exception:
-        # If rollback itself fails, we still try the failure-path writes below.
         pass
 
 
