@@ -282,10 +282,10 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
       {/* ── Header ── */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone/12 px-7 py-5">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-slate/38">Bio-Trajectory Analyzer</p>
-          <h2 className="mt-0.5 font-display text-3xl text-slate">The Rescue Gap</h2>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-slate/38">How This Child Is Doing Over Time</p>
+          <h2 className="mt-0.5 font-display text-3xl text-slate">Treated vs Expected Decline</h2>
           <p className="mt-1 max-w-lg text-sm text-slate/45">
-            Bayesian evidence engine — the purple band is the 95% confidence interval. If it stays above the red line, the FDA considers efficacy Highly Robust.
+            The purple line shows the child's observed function over time. The dashed line shows the decline we would expect without treatment. The shaded band shows uncertainty, so wider areas mean less certainty.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-slate/45">
@@ -509,10 +509,6 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
             />
           </ComposedChart>
         </ResponsiveContainer>
-
-        <p className="mt-1 text-center font-newsreader text-xs text-sage/60" style={{ fontStyle: "italic" }}>
-          The space between the lines is the mind we are saving.
-        </p>
       </div>
     </div>
   );

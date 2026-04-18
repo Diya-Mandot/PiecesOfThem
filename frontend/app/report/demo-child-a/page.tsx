@@ -2,7 +2,12 @@ import { DataUnavailable } from "@/components/data-unavailable";
 import { ReportPage } from "@/components/report-page";
 import { getReport } from "@/lib/api";
 
-export default async function DemoReportPage() {
+export default async function DemoReportPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ print?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const report = await getReport("demo-child-a");
 
   if (!report) {
@@ -14,5 +19,5 @@ export default async function DemoReportPage() {
     );
   }
 
-  return <ReportPage report={report} />;
+  return <ReportPage report={report} autoPrint={params.print === "1"} />;
 }
