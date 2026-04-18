@@ -304,6 +304,55 @@ export const demoFallbackBundle: CaseBundle = {
       rawRef: "Forum paraphrase / April 2026",
     },
 
+    // ── Real-world source: curesanfilippofoundation.org / Aug 24 2020
+    // "A Year After Going Public With Son's Sanfilippo Diagnosis" — Marisa Dobbyn (MPS IIIC)
+    // Adapted as natural-history cross-subtype reference for the demo case.
+    {
+      id: "FRG-2020-EXT-001",
+      caseId: "demo-child-a",
+      date: "2020-08-24",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "One year after going public: mother's reflection",
+      excerpt:
+        "I needed time to process, to grieve, to mourn the loss of what I thought my life would look like before committing fully to the fight ahead. There was no roadmap for this. There was only the decision — every single day — to keep going, because he was still here and still needed us to.",
+      tags: ["behavior", "caregiver grief", "advocacy", "1-year post-disclosure"],
+      signalDomain: "behavior",
+      deidentified: true,
+      confidence: "high",
+      rawRef: "curesanfilippofoundation.org / Aug 24 2020 / Marisa Dobbyn (MPS IIIC — cross-subtype natural history reference)",
+    },
+    {
+      id: "FRG-2020-EXT-002",
+      caseId: "demo-child-a",
+      date: "2020-08-24",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "Community mobilization: unexpected recognition",
+      excerpt:
+        "What I did not realize was how much Connor — and our family — had impacted so many people. I expected sympathy. What we got was mobilization. People who had never met him showed up. They raised money, they shared the story, they told us our son mattered to them. For a family sitting with an impossible diagnosis, that recognition is its own kind of medicine.",
+      tags: ["recognition", "community", "advocacy", "caregiver", "social support"],
+      signalDomain: "recognition",
+      deidentified: true,
+      confidence: "high",
+      rawRef: "curesanfilippofoundation.org / Aug 24 2020 / Marisa Dobbyn (MPS IIIC — cross-subtype natural history reference)",
+    },
+    {
+      id: "FRG-2020-EXT-003",
+      caseId: "demo-child-a",
+      date: "2020-08-24",
+      sourceType: "Forum Observation",
+      modality: "text",
+      title: "Clinical trial gap: $5M needed, COVID derailing timeline",
+      excerpt:
+        "We needed five million dollars for a clinical trial and COVID-19 erased the fundraising calendar overnight. Every month without treatment is a month the disease keeps moving. There is a window for gene therapy in Sanfilippo and it does not stay open. The pandemic did not pause the disease — it only paused our ability to fight it.",
+      tags: ["behavior", "clinical trial", "funding gap", "COVID", "timeline urgency"],
+      signalDomain: "behavior",
+      deidentified: true,
+      confidence: "high",
+      rawRef: "curesanfilippofoundation.org / Aug 24 2020 / Marisa Dobbyn (MPS IIIC — cross-subtype natural history reference)",
+    },
+
     // ── Real-world source: thecantoncitizen.com / June 14 2024
     // "Reflections of a Sanfilippo Dad: 5 Years Later" — Mike Dobbyn (MPS IIIC)
     // Adapted as natural-history cross-subtype reference for the demo case.
@@ -372,7 +421,7 @@ export const demoFallbackBundle: CaseBundle = {
       domain: "recognition",
       trend: "stable",
       confidence: "high",
-      fragmentIds: ["FRG-2024-114", "FRG-2025-018", "FRG-2026-013", "FRG-2026-041", "FRG-2026-031", "FRG-2026-072", "FRG-2024-EXT-001"],
+      fragmentIds: ["FRG-2024-114", "FRG-2025-018", "FRG-2026-013", "FRG-2026-041", "FRG-2026-031", "FRG-2026-072", "FRG-2024-EXT-001", "FRG-2020-EXT-002"],
     },
     {
       id: "CLM-SLEEP-IMPROVING",
@@ -392,7 +441,7 @@ export const demoFallbackBundle: CaseBundle = {
       domain: "behavior",
       trend: "stable",
       confidence: "high",
-      fragmentIds: ["FRG-2025-128", "FRG-2026-053", "FRG-2026-061", "FRG-2026-084", "FRG-2024-EXT-002", "FRG-2024-EXT-003"],
+      fragmentIds: ["FRG-2025-128", "FRG-2026-053", "FRG-2026-061", "FRG-2026-084", "FRG-2024-EXT-002", "FRG-2024-EXT-003", "FRG-2020-EXT-001", "FRG-2020-EXT-003"],
     },
   ],
 };
