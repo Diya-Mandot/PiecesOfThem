@@ -40,6 +40,11 @@ async function fetchBackend<T>(path: string, init?: RequestInit): Promise<T | nu
   }
 
   if (!response.ok) {
+    // 5xx: backend is up but erroring — return null so callers can fall back to demo data
+    if (response.status >= 500) {
+      return null;
+    }
+
     let details = response.statusText;
 
     try {
