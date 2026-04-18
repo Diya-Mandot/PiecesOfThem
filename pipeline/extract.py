@@ -1,8 +1,7 @@
-"""Extraction orchestration for chunk-level LLM datapoint capture."""
+"""Extraction orchestration for frontend-native evidence fragments and claims."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,22 +9,77 @@ from typing import Any
 
 from openai import OpenAI
 from pydantic import ValidationError
-from psycopg.types.json import Jsonb
 
 from .config import PipelineConfig
 from .db import connect
-from .models import ExtractedDatapoint, ExtractionDecision
+from .evidence import infer_treatment_status, store_claim, store_evidence_fragment
+from .models import (
+    ClaimSynthesisResponse,
+    EvidenceFragment,
+    EvidenceFragmentCandidate,
+    EvidenceFragmentExtractionResponse,
+)
 
-PROMPT_VERSION = "2026-04-17-v2"
+PROMPT_VERSION = "2026-04-17-v3"
 EXTRACTOR_NAME = "openai-responses"
-PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "extraction_prompt.md"
+FRAGMENT_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "extraction_prompt.md"
+CLAIM_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "claim_synthesis_prompt.md"
 EMPTY_RESULT_ISSUE_TYPE = "empty_result"
 NO_NOVEL_DATAPOINTS_ISSUE_TYPE = "no_novel_datapoints"
 CONTEXT_EXHAUSTED_ISSUE_TYPE = "context_exhausted"
+SKIPPED_DOCUMENT_ISSUE_TYPE = "skipped_document"
 TERMINAL_ISSUE_TYPES = (
     EMPTY_RESULT_ISSUE_TYPE,
     NO_NOVEL_DATAPOINTS_ISSUE_TYPE,
     CONTEXT_EXHAUSTED_ISSUE_TYPE,
+    SKIPPED_DOCUMENT_ISSUE_TYPE,
+)
+
+VOCABULARY_MARKERS = (
+    "alphabet",
+    "fully verbal",
+    "i love you",
+    "language",
+    "recite",
+    "said",
+    "say",
+    "sing",
+    "song",
+    "speak",
+    "speech",
+    "verbal",
+    "vocabulary",
+    "word",
+    "words",
+)
+RECOGNITION_MARKERS = (
+    "dog's name",
+    "familiar",
+    "knew",
+    "name",
+    "named",
+    "recogn",
+    "remember",
+    "voice",
+)
+DECLINE_MARKERS = (
+    "decline",
+    "declining",
+    "lost",
+    "loss",
+    "no longer",
+    "unable",
+    "worse",
+    "worsened",
+)
+LISTING_MARKERS = (
+    "columns",
+    "discussion columns",
+    "explore more",
+    "newsletter",
+    "recent posts",
+    "search for:",
+    "toggle navigation",
 )
 
 
@@ -36,17 +90,18 @@ class LoadedChunk:
     chunk_text: str
 
 
-def _load_prompt_template() -> str:
-    return PROMPT_PATH.read_text(encoding="utf-8")
+def _load_prompt_template(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
 
 
 def _build_prompt(
     *,
     anchor_chunk_id: int,
     loaded_chunks: list[LoadedChunk],
-    existing_datapoints: list[dict[str, Any]],
+    source_context: dict[str, Any],
+    existing_fragments: list[dict[str, Any]],
 ) -> str:
-    template = _load_prompt_template()
+    template = _load_prompt_template(FRAGMENT_PROMPT_PATH)
     loaded_payload = [
         {
             "chunk_id": chunk.chunk_id,
@@ -57,23 +112,39 @@ def _build_prompt(
     ]
     existing_payload = [
         {
-            "datapoint_type": item["datapoint_type"],
-            "subject_label": item.get("subject_label"),
-            "disease_subtype": item.get("disease_subtype"),
-            "trial_program": item.get("trial_program"),
+            "id": item.get("external_id"),
+            "title": item["title"],
+            "excerpt": item["excerpt"],
+            "signal_domain": item["signal_domain"],
             "confidence": item.get("confidence"),
-            "evidence_quote": item["evidence_quote"],
-            "value": item.get("value"),
         }
-        for item in existing_datapoints
+        for item in existing_fragments
     ]
-    return (
+    prompt = (
         f"{template}\n\n"
         f"Anchor chunk id: {anchor_chunk_id}\n\n"
-        "Existing datapoints for this anchor chunk:\n"
+        "Source context:\n"
+        f"{json.dumps(source_context, indent=2, sort_keys=True)}\n\n"
+        "Existing evidence fragments for this anchor chunk:\n"
         f"{json.dumps(existing_payload, indent=2, sort_keys=True)}\n\n"
         "Loaded chunks:\n"
         f"{json.dumps(loaded_payload, indent=2, sort_keys=True)}"
+    )
+    return prompt
+
+
+def _build_claim_synthesis_prompt(
+    *,
+    case_record: dict[str, Any],
+    fragments: list[dict[str, Any]],
+) -> str:
+    template = _load_prompt_template(CLAIM_PROMPT_PATH)
+    return (
+        f"{template}\n\n"
+        "Case record:\n"
+        f"{json.dumps(case_record, indent=2, sort_keys=True)}\n\n"
+        "Fragments:\n"
+        f"{json.dumps(fragments, indent=2, sort_keys=True)}"
     )
 
 
@@ -112,70 +183,6 @@ def _extract_output_text_from_response(client: OpenAI, *, model: str, prompt: st
             return "\n".join(parts)
 
     raise ValueError("OpenAI chat completion did not include text content")
-
-
-def _compute_dedupe_key(datapoint: ExtractedDatapoint) -> str:
-    payload = {
-        "datapoint_type": datapoint.datapoint_type,
-        "subject_label": datapoint.subject_label,
-        "disease_subtype": datapoint.disease_subtype,
-        "trial_program": datapoint.trial_program,
-        "value": datapoint.value.model_dump(mode="json"),
-    }
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def _store_datapoint(
-    cursor: Any,
-    *,
-    extraction_run_id: int,
-    source_document_id: int,
-    datapoint: ExtractedDatapoint,
-    dedupe_key: str | None = None,
-    anchor_chunk_id: int | None = None,
-) -> None:
-    cursor.execute(
-        """
-        INSERT INTO ingestion.extracted_datapoints (
-          extraction_run_id, source_document_id, datapoint_type, schema_version,
-          dedupe_key, subject_label, disease_subtype, trial_program,
-          value_json, confidence, evidence_quote, char_start, char_end
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-        """,
-        (
-            extraction_run_id,
-            source_document_id,
-            datapoint.datapoint_type,
-            PROMPT_VERSION,
-            dedupe_key or _compute_dedupe_key(datapoint),
-            datapoint.subject_label,
-            datapoint.disease_subtype,
-            datapoint.trial_program,
-            Jsonb(datapoint.value.model_dump(mode="json")),
-            datapoint.confidence,
-            datapoint.evidence_quote,
-            None,
-            None,
-        ),
-    )
-    datapoint_id = cursor.fetchone()[0]
-    supporting_chunk_ids = list(datapoint.supporting_chunk_ids)
-    if anchor_chunk_id is not None and anchor_chunk_id not in supporting_chunk_ids:
-        supporting_chunk_ids.insert(0, anchor_chunk_id)
-
-    for chunk_order, chunk_id in enumerate(dict.fromkeys(supporting_chunk_ids)):
-        cursor.execute(
-            """
-            INSERT INTO ingestion.extracted_datapoint_chunks (
-              extracted_datapoint_id, source_document_id, chunk_id, evidence_role, chunk_order
-            )
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (datapoint_id, source_document_id, chunk_id, "supporting", chunk_order),
-        )
 
 
 def _mark_run_failed(
@@ -236,9 +243,9 @@ def _mark_run_started(
 def _record_issue(
     cursor: Any,
     *,
-    extraction_run_id: int,
+    extraction_run_id: int | None,
     source_document_id: int,
-    chunk_id: int,
+    chunk_id: int | None,
     issue_type: str,
     message: str,
     raw_output: str | None,
@@ -251,63 +258,6 @@ def _record_issue(
         VALUES (%s, %s, %s, %s, %s, %s)
         """,
         (extraction_run_id, source_document_id, chunk_id, issue_type, raw_output, message),
-    )
-
-
-def _record_empty_result(
-    cursor: Any,
-    *,
-    extraction_run_id: int,
-    source_document_id: int,
-    chunk_id: int,
-    raw_output: str,
-) -> None:
-    _record_issue(
-        cursor,
-        extraction_run_id=extraction_run_id,
-        source_document_id=source_document_id,
-        chunk_id=chunk_id,
-        issue_type=EMPTY_RESULT_ISSUE_TYPE,
-        message="Valid extraction returned zero datapoints",
-        raw_output=raw_output,
-    )
-
-
-def _record_no_novel_datapoints(
-    cursor: Any,
-    *,
-    extraction_run_id: int,
-    source_document_id: int,
-    chunk_id: int,
-    raw_output: str,
-) -> None:
-    _record_issue(
-        cursor,
-        extraction_run_id=extraction_run_id,
-        source_document_id=source_document_id,
-        chunk_id=chunk_id,
-        issue_type=NO_NOVEL_DATAPOINTS_ISSUE_TYPE,
-        message="Extraction returned no novel datapoints for anchor chunk",
-        raw_output=raw_output,
-    )
-
-
-def _record_context_exhausted(
-    cursor: Any,
-    *,
-    extraction_run_id: int,
-    source_document_id: int,
-    chunk_id: int,
-    raw_output: str,
-) -> None:
-    _record_issue(
-        cursor,
-        extraction_run_id=extraction_run_id,
-        source_document_id=source_document_id,
-        chunk_id=chunk_id,
-        issue_type=CONTEXT_EXHAUSTED_ISSUE_TYPE,
-        message="Extraction exhausted adjacent context without a final answer",
-        raw_output=raw_output,
     )
 
 
@@ -354,8 +304,8 @@ def _eligible_chunks(cursor: Any) -> list[tuple[int, int, int, str]]:
         FROM ingestion.document_chunks dc
         WHERE NOT EXISTS (
           SELECT 1
-          FROM ingestion.extracted_datapoint_chunks edc
-          WHERE edc.chunk_id = dc.id
+          FROM ingestion.evidence_fragment_chunks efc
+          WHERE efc.chunk_id = dc.id
         )
           AND NOT EXISTS (
             SELECT 1
@@ -363,9 +313,15 @@ def _eligible_chunks(cursor: Any) -> list[tuple[int, int, int, str]]:
             WHERE ei.chunk_id = dc.id
               AND ei.issue_type IN (%s, %s, %s)
           )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ingestion.extraction_issues ei
+            WHERE ei.source_document_id = dc.source_document_id
+              AND ei.issue_type = %s
+          )
         ORDER BY dc.id
         """,
-        TERMINAL_ISSUE_TYPES,
+        (*TERMINAL_ISSUE_TYPES[:3], SKIPPED_DOCUMENT_ISSUE_TYPE),
     )
     return cursor.fetchall()
 
@@ -383,44 +339,125 @@ def _load_document_chunks(cursor: Any, *, source_document_id: int) -> list[Loade
     return [LoadedChunk(chunk_id=row[0], chunk_index=row[1], chunk_text=row[2]) for row in cursor.fetchall()]
 
 
-def _load_existing_datapoints_for_anchor(cursor: Any, *, anchor_chunk_id: int) -> list[dict[str, Any]]:
+def _map_frontend_source_type(seed_source_type: str | None, author_role: str | None) -> str:
+    haystack = " ".join(filter(None, [seed_source_type, author_role])).lower()
+    if "parent" in haystack or "caregiver" in haystack or "family" in haystack:
+        return "Parent Journal"
+    if "voice" in haystack or "audio" in haystack or "transcript" in haystack:
+        return "Caregiver Transcript"
+    if "clinic" in haystack or "hospital" in haystack or "summary" in haystack or "study" in haystack:
+        return "Clinic Summary"
+    if "journal" in haystack or "diary" in haystack:
+        return "Parent Journal"
+    if "forum" in haystack or "reddit" in haystack or "discord" in haystack:
+        return "Forum Observation"
+    return "Parent Journal"
+
+
+def _map_modality(source_type: str) -> str:
+    if source_type == "Caregiver Transcript":
+        return "audio-transcript"
+    if source_type == "Clinic Summary":
+        return "summary"
+    return "text"
+
+
+def _load_source_context(cursor: Any, *, source_document_id: int) -> dict[str, Any]:
     cursor.execute(
         """
-        SELECT ed.dedupe_key,
-               ed.datapoint_type,
-               ed.subject_label,
-               ed.disease_subtype,
-               ed.trial_program,
-               ed.confidence,
-               ed.evidence_quote,
-               ed.value_json
-        FROM ingestion.extracted_datapoints ed
-        INNER JOIN ingestion.extracted_datapoint_chunks edc
-          ON edc.extracted_datapoint_id = ed.id
-        WHERE edc.chunk_id = %s
-        ORDER BY ed.id
+        SELECT ss.seed_id,
+               ss.label,
+               ss.subject_label,
+               ss.disease_subtype,
+               ss.trial_program,
+               ss.intervention_class,
+               ss.confirmed_participation,
+               ss.named_publicly,
+               ss.source_type,
+               ss.author_role,
+               ss.source_confidence,
+               sd.source_url,
+               sd.title
+        FROM ingestion.source_documents sd
+        INNER JOIN ingestion.seed_sources ss
+          ON ss.id = sd.seed_source_id
+        WHERE sd.id = %s
+        """,
+        (source_document_id,),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise ValueError(f"Missing source context for source_document_id={source_document_id}")
+
+    source_type = _map_frontend_source_type(row[8], row[9])
+    context = {
+        "case_id": row[0],
+        "seed_id": row[0],
+        "label": row[1],
+        "subject_label": row[2],
+        "disease_subtype": row[3],
+        "trial_program": row[4],
+        "intervention_class": row[5],
+        "confirmed_participation": row[6],
+        "named_publicly": row[7],
+        "seed_source_type": row[8],
+        "author_role": row[9],
+        "source_confidence": row[10],
+        "source_url": row[11],
+        "document_title": row[12],
+        "recommended_source_type": source_type,
+        "recommended_modality": _map_modality(source_type),
+    }
+    context["treatment_status"] = infer_treatment_status(context)
+    return context
+
+
+def _load_existing_fragments_for_anchor(cursor: Any, *, anchor_chunk_id: int) -> list[dict[str, Any]]:
+    cursor.execute(
+        """
+        SELECT ef.external_id,
+               ef.title,
+               ef.excerpt,
+               ef.signal_domain,
+               ef.confidence
+        FROM ingestion.evidence_fragments ef
+        INNER JOIN ingestion.evidence_fragment_chunks efc
+          ON efc.evidence_fragment_id = ef.id
+        WHERE efc.chunk_id = %s
+        ORDER BY ef.id
         """,
         (anchor_chunk_id,),
     )
     rows = cursor.fetchall()
     return [
         {
-            "dedupe_key": row[0],
-            "datapoint_type": row[1],
-            "subject_label": row[2],
-            "disease_subtype": row[3],
-            "trial_program": row[4],
-            "confidence": row[5],
-            "evidence_quote": row[6],
-            "value": row[7],
+            "external_id": row[0],
+            "title": row[1],
+            "excerpt": row[2],
+            "signal_domain": row[3],
+            "confidence": row[4],
         }
         for row in rows
     ]
 
 
-def _extract_decision(client: OpenAI, *, model: str, prompt: str) -> ExtractionDecision:
-    raw_output = _extract_output_text_from_response(client, model=model, prompt=prompt)
-    return ExtractionDecision.model_validate(_load_response_payload(raw_output))
+def _load_existing_fragment_signatures(cursor: Any, *, source_document_id: int) -> set[tuple[str, str, str]]:
+    cursor.execute(
+        """
+        SELECT title, excerpt, signal_domain
+        FROM ingestion.evidence_fragments
+        WHERE source_document_id = %s
+        """,
+        (source_document_id,),
+    )
+    return {
+        (
+            row[0].strip().lower(),
+            row[1].strip().lower(),
+            row[2].strip().lower(),
+        )
+        for row in cursor.fetchall()
+    }
 
 
 def _expand_loaded_chunks(
@@ -453,19 +490,116 @@ def _expand_loaded_chunks(
     return sorted(expanded, key=lambda chunk: chunk.chunk_index)
 
 
+def _document_looks_like_listing(document_title: str | None, loaded_chunks: list[LoadedChunk]) -> bool:
+    sample_parts = [document_title or ""]
+    sample_parts.extend(chunk.chunk_text[:800] for chunk in loaded_chunks[:3])
+    haystack = " ".join(sample_parts).lower()
+    marker_count = sum(1 for marker in LISTING_MARKERS if marker in haystack)
+    return marker_count >= 3
+
+
+def _normalize_signal_domain(
+    *,
+    title: str,
+    excerpt: str,
+    signal_domain: str,
+) -> str:
+    haystack = f"{title} {excerpt}".lower()
+    if any(marker in haystack for marker in RECOGNITION_MARKERS):
+        return "recognition"
+    if any(marker in haystack for marker in VOCABULARY_MARKERS):
+        return "vocabulary"
+    return signal_domain
+
+
+def _title_looks_like_document_title(title: str, document_title: str | None) -> bool:
+    if not document_title:
+        return False
+    normalized_title = " ".join(title.lower().split())
+    normalized_document_title = " ".join(document_title.lower().split())
+    return (
+        normalized_title == normalized_document_title
+        or normalized_title in normalized_document_title
+        or normalized_document_title in normalized_title
+    )
+
+
+def _build_observation_title(*, signal_domain: str, excerpt: str) -> str:
+    haystack = excerpt.lower()
+    direction = "decline" if any(marker in haystack for marker in DECLINE_MARKERS) else "signal"
+    match signal_domain:
+        case "vocabulary":
+            prefix = "Language decline" if direction == "decline" else "Language signal"
+        case "recognition":
+            prefix = "Recognition decline" if direction == "decline" else "Recognition signal"
+        case "sleep":
+            prefix = "Sleep decline" if direction == "decline" else "Sleep signal"
+        case "behavior":
+            prefix = "Behavior decline" if direction == "decline" else "Behavior signal"
+        case _:
+            prefix = "Motor decline" if direction == "decline" else "Motor signal"
+
+    return f"{prefix} described by caregiver"
+
+
+def _hydrate_fragment(
+    fragment_payload: dict[str, Any] | EvidenceFragmentCandidate,
+    *,
+    source_context: dict[str, Any],
+) -> EvidenceFragment:
+    candidate = (
+        fragment_payload
+        if isinstance(fragment_payload, EvidenceFragmentCandidate)
+        else EvidenceFragmentCandidate.model_validate(fragment_payload)
+    )
+    signal_domain = _normalize_signal_domain(
+        title=candidate.title,
+        excerpt=candidate.excerpt,
+        signal_domain=candidate.signal_domain,
+    )
+    title = candidate.title
+    if _title_looks_like_document_title(title, source_context.get("document_title")):
+        title = _build_observation_title(signal_domain=signal_domain, excerpt=candidate.excerpt)
+
+    return EvidenceFragment(
+        date=candidate.date,
+        source_type=source_context["recommended_source_type"],
+        modality=source_context["recommended_modality"],
+        title=title,
+        excerpt=candidate.excerpt,
+        tags=candidate.tags,
+        signal_domain=signal_domain,
+        confidence=candidate.confidence,
+        supporting_chunk_ids=candidate.supporting_chunk_ids,
+    )
+
+
 def _validate_supporting_chunk_ids(
-    datapoint: ExtractedDatapoint,
+    fragment: EvidenceFragment,
     *,
     loaded_chunks: list[LoadedChunk],
 ) -> None:
     loaded_chunk_ids = {chunk.chunk_id for chunk in loaded_chunks}
-    unsupported = [chunk_id for chunk_id in datapoint.supporting_chunk_ids if chunk_id not in loaded_chunk_ids]
+    unsupported = [chunk_id for chunk_id in fragment.supporting_chunk_ids if chunk_id not in loaded_chunk_ids]
     if unsupported:
-        raise ValueError(f"Datapoint referenced unsupported chunk ids: {unsupported}")
+        raise ValueError(f"Fragment referenced unsupported chunk ids: {unsupported}")
+
+
+def _fragment_signature(fragment: EvidenceFragment) -> tuple[str, str, str]:
+    return (
+        fragment.title.strip().lower(),
+        fragment.excerpt.strip().lower(),
+        fragment.signal_domain.strip().lower(),
+    )
+
+
+def _build_raw_ref(source_context: dict[str, Any], anchor_chunk_id: int) -> str:
+    source_url = source_context.get("source_url") or source_context.get("seed_id")
+    return f"{source_url}#chunk-{anchor_chunk_id}"
 
 
 def run_extraction(config: PipelineConfig) -> int:
-    """Run model extraction for chunks that do not yet have datapoints."""
+    """Run model extraction for chunks that do not yet have evidence fragments."""
 
     client = OpenAI(api_key=config.openai_api_key)
     inserted = 0
@@ -488,6 +622,26 @@ def run_extraction(config: PipelineConfig) -> int:
                         cursor,
                         source_document_id=source_document_id,
                     )
+                    source_context = _load_source_context(
+                        cursor,
+                        source_document_id=source_document_id,
+                    )
+                    if _document_looks_like_listing(
+                        source_context.get("document_title"),
+                        document_chunks,
+                    ):
+                        _record_issue(
+                            cursor,
+                            extraction_run_id=extraction_run_id,
+                            source_document_id=source_document_id,
+                            chunk_id=chunk_id,
+                            issue_type=SKIPPED_DOCUMENT_ISSUE_TYPE,
+                            message="Skipped document because it appears to be a listing or hub page",
+                            raw_output=None,
+                        )
+                        _mark_run_completed(cursor, extraction_run_id=extraction_run_id)
+                        connection.commit()
+                        continue
                     loaded_chunks = [
                         LoadedChunk(
                             chunk_id=chunk_id,
@@ -495,29 +649,31 @@ def run_extraction(config: PipelineConfig) -> int:
                             chunk_text=chunk_text,
                         )
                     ]
-                    existing_datapoints = _load_existing_datapoints_for_anchor(
+                    existing_fragments = _load_existing_fragments_for_anchor(
                         cursor,
                         anchor_chunk_id=chunk_id,
                     )
-                    existing_dedupe_keys = {
-                        item["dedupe_key"]
-                        for item in existing_datapoints
-                        if item.get("dedupe_key")
-                    }
+                    existing_signatures = _load_existing_fragment_signatures(
+                        cursor,
+                        source_document_id=source_document_id,
+                    )
                     hops_used = 0
 
                     while True:
                         prompt = _build_prompt(
                             anchor_chunk_id=chunk_id,
                             loaded_chunks=loaded_chunks,
-                            existing_datapoints=existing_datapoints,
+                            source_context=source_context,
+                            existing_fragments=existing_fragments,
                         )
                         raw_output = _extract_output_text_from_response(
                             client,
                             model=config.openai_model,
                             prompt=prompt,
                         )
-                        decision = ExtractionDecision.model_validate(_load_response_payload(raw_output))
+                        decision = EvidenceFragmentExtractionResponse.model_validate(
+                            _load_response_payload(raw_output)
+                        )
 
                         if decision.action == "request_more_context":
                             expanded_chunks = _expand_loaded_chunks(
@@ -526,11 +682,13 @@ def run_extraction(config: PipelineConfig) -> int:
                                 available_chunks=document_chunks,
                             )
                             if hops_used >= config.max_adjacent_hops or len(expanded_chunks) == len(loaded_chunks):
-                                _record_context_exhausted(
+                                _record_issue(
                                     cursor,
                                     extraction_run_id=extraction_run_id,
                                     source_document_id=source_document_id,
                                     chunk_id=chunk_id,
+                                    issue_type=CONTEXT_EXHAUSTED_ISSUE_TYPE,
+                                    message="Extraction exhausted adjacent context without a final answer",
                                     raw_output=raw_output,
                                 )
                                 _mark_run_completed(cursor, extraction_run_id=extraction_run_id)
@@ -542,41 +700,52 @@ def run_extraction(config: PipelineConfig) -> int:
                             continue
 
                         novel_insertions = 0
-                        for datapoint in decision.datapoints:
+                        for candidate in decision.fragments:
+                            fragment = _hydrate_fragment(
+                                candidate,
+                                source_context=source_context,
+                            )
                             _validate_supporting_chunk_ids(
-                                datapoint,
+                                fragment,
                                 loaded_chunks=loaded_chunks,
                             )
-                            dedupe_key = _compute_dedupe_key(datapoint)
-                            if dedupe_key in existing_dedupe_keys:
+                            signature = _fragment_signature(fragment)
+                            if signature in existing_signatures:
                                 continue
 
-                            _store_datapoint(
+                            store_evidence_fragment(
                                 cursor,
-                                extraction_run_id=extraction_run_id,
                                 source_document_id=source_document_id,
-                                datapoint=datapoint,
-                                dedupe_key=dedupe_key,
-                                anchor_chunk_id=chunk_id,
+                                case_id=source_context["case_id"],
+                                raw_ref=_build_raw_ref(source_context, chunk_id),
+                                treatment_status=source_context["treatment_status"],
+                                treatment_basis="seed_provenance",
+                                trial_program=source_context.get("trial_program"),
+                                intervention_class=source_context.get("intervention_class"),
+                                fragment=fragment,
                             )
-                            existing_dedupe_keys.add(dedupe_key)
+                            existing_signatures.add(signature)
                             novel_insertions += 1
                             inserted += 1
 
-                        if not decision.datapoints:
-                            _record_empty_result(
+                        if not decision.fragments:
+                            _record_issue(
                                 cursor,
                                 extraction_run_id=extraction_run_id,
                                 source_document_id=source_document_id,
                                 chunk_id=chunk_id,
+                                issue_type=EMPTY_RESULT_ISSUE_TYPE,
+                                message="Valid extraction returned zero evidence fragments",
                                 raw_output=raw_output,
                             )
                         elif novel_insertions == 0:
-                            _record_no_novel_datapoints(
+                            _record_issue(
                                 cursor,
                                 extraction_run_id=extraction_run_id,
                                 source_document_id=source_document_id,
                                 chunk_id=chunk_id,
+                                issue_type=NO_NOVEL_DATAPOINTS_ISSUE_TYPE,
+                                message="Extraction returned no novel evidence fragments for anchor chunk",
                                 raw_output=raw_output,
                             )
 
@@ -603,5 +772,140 @@ def run_extraction(config: PipelineConfig) -> int:
                         message=str(exc),
                         raw_output=raw_output,
                     )
+
+    return inserted
+
+
+def _load_cases_for_claim_synthesis(cursor: Any) -> list[dict[str, Any]]:
+    cursor.execute(
+        """
+        SELECT ef.case_id,
+               MIN(ss.label),
+               MIN(ss.disease_subtype),
+               MIN(COALESCE(ef.trial_program, ss.trial_program)),
+               MIN(ef.treatment_status)
+        FROM ingestion.evidence_fragments ef
+        INNER JOIN ingestion.source_documents sd
+          ON sd.id = ef.source_document_id
+        INNER JOIN ingestion.seed_sources ss
+          ON ss.id = sd.seed_source_id
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM ingestion.claims c
+          WHERE c.case_id = ef.case_id
+        )
+        GROUP BY ef.case_id
+        ORDER BY ef.case_id
+        """
+    )
+    return [
+        {
+            "case_id": row[0],
+            "label": row[1],
+            "disease_subtype": row[2],
+            "trial_program": row[3],
+            "treatment_status": row[4],
+        }
+        for row in cursor.fetchall()
+    ]
+
+
+def _load_fragments_for_case(cursor: Any, *, case_id: str) -> list[dict[str, Any]]:
+    cursor.execute(
+        """
+        SELECT external_id,
+               source_document_id,
+               fragment_date,
+               source_type,
+               title,
+               excerpt,
+               signal_domain,
+               confidence
+        FROM ingestion.evidence_fragments
+        WHERE case_id = %s
+        ORDER BY fragment_date, external_id
+        """,
+        (case_id,),
+    )
+    return [
+        {
+            "id": row[0],
+            "source_document_id": row[1],
+            "date": row[2],
+            "source_type": row[3],
+            "title": row[4],
+            "excerpt": row[5],
+            "signal_domain": row[6],
+            "confidence": row[7],
+        }
+        for row in cursor.fetchall()
+    ]
+
+
+def synthesize_claims(config: PipelineConfig) -> int:
+    """Synthesize reviewer-facing claims from stored evidence fragments."""
+
+    client = OpenAI(api_key=config.openai_api_key)
+    inserted = 0
+
+    with connect(config) as connection:
+        with connection.cursor() as cursor:
+            cases = _load_cases_for_claim_synthesis(cursor)
+
+            for case_record in cases:
+                fragments = _load_fragments_for_case(cursor, case_id=case_record["case_id"])
+                if not fragments:
+                    continue
+
+                prompt = _build_claim_synthesis_prompt(
+                    case_record=case_record,
+                    fragments=fragments,
+                )
+                raw_output: str | None = None
+
+                try:
+                    raw_output = _extract_output_text_from_response(
+                        client,
+                        model=config.openai_model,
+                        prompt=prompt,
+                    )
+                    response = ClaimSynthesisResponse.model_validate(
+                        _load_response_payload(raw_output)
+                    )
+
+                    existing_signatures: set[tuple[str, str, str]] = set()
+                    for claim in response.claims:
+                        signature = (
+                            claim.statement.strip().lower(),
+                            claim.domain,
+                            claim.trend,
+                        )
+                        if signature in existing_signatures:
+                            continue
+
+                        store_claim(
+                            cursor,
+                            case_id=case_record["case_id"],
+                            treatment_status=case_record["treatment_status"],
+                            trial_program=case_record.get("trial_program"),
+                            claim=claim,
+                        )
+                        existing_signatures.add(signature)
+                        inserted += 1
+
+                    connection.commit()
+                except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+                    _rollback_before_failure_logging(connection)
+                    first_source_document_id = fragments[0]["source_document_id"]
+                    _record_issue(
+                        cursor,
+                        extraction_run_id=None,
+                        source_document_id=first_source_document_id,
+                        chunk_id=None,
+                        issue_type=type(exc).__name__,
+                        message=f"Claim synthesis failed for case {case_record['case_id']}: {exc}",
+                        raw_output=raw_output,
+                    )
+                    connection.commit()
 
     return inserted

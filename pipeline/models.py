@@ -22,6 +22,17 @@ DatapointType = Literal[
 
 
 Confidence = Literal["low", "medium", "high"]
+FrontendConfidence = Literal["moderate", "high"]
+SignalDomain = Literal["vocabulary", "recognition", "sleep", "behavior", "motor"]
+SourceType = Literal[
+    "Parent Journal",
+    "Caregiver Transcript",
+    "Clinic Summary",
+    "Forum Observation",
+    "Voice Memo",
+]
+SourceModality = Literal["text", "audio-transcript", "summary"]
+ClaimTrend = Literal["stable", "declining", "improving", "mixed"]
 
 
 class ChildIdentityValue(BaseModel):
@@ -146,3 +157,100 @@ class ExtractionDecision(BaseModel):
             if self.requested_directions:
                 raise ValueError("submit_datapoints must not request directions")
         return self
+
+
+class EvidenceFragment(BaseModel):
+    """Reviewer-facing fragment aligned to the frontend evidence card shape."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    date: StrictText
+    source_type: SourceType
+    modality: SourceModality
+    title: StrictText
+    excerpt: StrictText
+    tags: list[StrictText]
+    signal_domain: SignalDomain
+    confidence: FrontendConfidence
+    supporting_chunk_ids: list[int]
+
+    @model_validator(mode="after")
+    def _validate_supporting_chunk_ids(self) -> "EvidenceFragment":
+        if not self.supporting_chunk_ids:
+            raise ValueError("supporting_chunk_ids must not be empty")
+        if len(set(self.supporting_chunk_ids)) != len(self.supporting_chunk_ids):
+            raise ValueError("supporting_chunk_ids must be unique")
+        return self
+
+
+class EvidenceFragmentCandidate(BaseModel):
+    """LLM-emitted fragment fields before provenance-based hydration."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    date: StrictText
+    title: StrictText
+    excerpt: StrictText
+    tags: list[StrictText]
+    signal_domain: SignalDomain
+    confidence: FrontendConfidence
+    supporting_chunk_ids: list[int]
+
+    @model_validator(mode="after")
+    def _validate_supporting_chunk_ids(self) -> "EvidenceFragmentCandidate":
+        if not self.supporting_chunk_ids:
+            raise ValueError("supporting_chunk_ids must not be empty")
+        if len(set(self.supporting_chunk_ids)) != len(self.supporting_chunk_ids):
+            raise ValueError("supporting_chunk_ids must be unique")
+        return self
+
+
+class EvidenceFragmentExtractionResponse(BaseModel):
+    """Top-level fragment extraction response returned by the model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["request_more_context", "submit_fragments"]
+    reason: StrictText | None = None
+    requested_directions: list[Literal["left", "right"]] = []
+    fragments: list[EvidenceFragmentCandidate]
+
+    @model_validator(mode="after")
+    def _validate_action_payload(self) -> "EvidenceFragmentExtractionResponse":
+        if self.action == "request_more_context":
+            if not self.requested_directions:
+                raise ValueError("requested_directions must not be empty")
+            if self.fragments:
+                raise ValueError("request_more_context must not include fragments")
+        else:
+            if self.requested_directions:
+                raise ValueError("submit_fragments must not request directions")
+        return self
+
+
+class SynthesizedClaim(BaseModel):
+    """Reviewer-facing claim aligned to the frontend claim card shape."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    statement: StrictText
+    domain: SignalDomain
+    trend: ClaimTrend
+    confidence: FrontendConfidence
+    fragment_ids: list[StrictText]
+
+    @model_validator(mode="after")
+    def _validate_fragment_ids(self) -> "SynthesizedClaim":
+        if not self.fragment_ids:
+            raise ValueError("fragment_ids must not be empty")
+        if len(set(self.fragment_ids)) != len(self.fragment_ids):
+            raise ValueError("fragment_ids must be unique")
+        return self
+
+
+class ClaimSynthesisResponse(BaseModel):
+    """Top-level claim synthesis response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claims: list[SynthesizedClaim]
