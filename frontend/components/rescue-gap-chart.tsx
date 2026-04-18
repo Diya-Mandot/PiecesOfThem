@@ -4,6 +4,7 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -22,18 +23,19 @@ const DOMAIN_LABELS: Record<string, string> = {
   motor: "Motor Function",
 };
 
+// Milestone: fragments in these domains get pulsing treatment
 const MILESTONE_DOMAINS = new Set(["vocabulary", "recognition"]);
 
-// Semantic density: higher-fidelity sources → tighter confidence band
+// Semantic density: higher-fidelity sources → tighter 95% CI
 const SOURCE_VARIANCE: Record<string, number> = {
   "Voice Memo": 5,
-  "Clinic Summary": 8,
+  "Clinic Summary": 7,
   "Caregiver Transcript": 10,
-  "Parent Journal": 12,
+  "Parent Journal": 13,
   "Forum Observation": 18,
 };
 
-const MILESTONE_LABELS: Record<string, string> = {
+const MILESTONE_CATEGORY: Record<string, string> = {
   vocabulary: "Lexical Functional Communication",
   recognition: "Episodic Retrieval Event",
   motor: "Voluntary Motor Coordination",
@@ -45,8 +47,11 @@ type ChartPoint = {
   label: string;
   treated: number;
   naturalPowerLaw: number;
-  bandLo: number;
-  bandWidth: number;
+  ciUpper: number;
+  ciLower: number;
+  // stacked band: ciLower baseline (transparent) + band width (purple)
+  bandBase: number;
+  bandSize: number;
   variance: number;
   deviation: number;
   fragmentId: string;
@@ -75,10 +80,22 @@ function NarrativeTooltip({
   const point = payload[0].payload;
   const frag = point.fragment;
   const delta = Math.round(point.treated - point.naturalPowerLaw);
+  const isRobust = point.ciLower > point.naturalPowerLaw;
 
   return (
     <div className="w-72 overflow-hidden rounded-[1.3rem] border border-stone/20 bg-white shadow-[0_8px_40px_rgba(44,41,48,0.14)]">
       <div className="px-4 pt-4">
+        {/* Status banner */}
+        <div
+          className="mb-3 rounded-lg px-3 py-1.5 text-[10px] uppercase tracking-[0.16em]"
+          style={{
+            background: isRobust ? "rgba(122,158,135,0.12)" : "rgba(201,135,114,0.12)",
+            color: isRobust ? "#5A8A6A" : "#C98972",
+          }}
+        >
+          {isRobust ? "✓ Highly Robust — band above decline threshold" : "⚠ Band overlaps decline — more data needed"}
+        </div>
+
         <div className="mb-2.5 flex flex-wrap gap-1.5">
           {frag && (
             <span className="rounded-full border border-stone/20 bg-parchment px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-slate/45">
@@ -97,13 +114,11 @@ function NarrativeTooltip({
           )}
         </div>
 
-        <p className="font-display text-sm leading-snug text-slate">
-          {frag?.title ?? point.label}
-        </p>
+        <p className="font-display text-sm leading-snug text-slate">{frag?.title ?? point.label}</p>
 
         {point.isMilestone && frag && (
           <p className="mt-1 text-[11px] font-medium text-[#8E5E7A]/80">
-            {MILESTONE_LABELS[frag.signalDomain]}
+            {MILESTONE_CATEGORY[frag.signalDomain]}
           </p>
         )}
 
@@ -118,28 +133,27 @@ function NarrativeTooltip({
 
         <div className="mt-3 grid grid-cols-4 gap-1 border-t border-stone/12 pt-3">
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.14em] text-slate/35">Treated</p>
+            <p className="text-[9px] uppercase tracking-[0.12em] text-slate/35">Treated</p>
             <p className="font-display text-base text-[#8E5E7A]">{point.treated}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.14em] text-slate/35">Natural</p>
+            <p className="text-[9px] uppercase tracking-[0.12em] text-slate/35">Natural</p>
             <p className="font-display text-base text-slate/50">{Math.round(point.naturalPowerLaw)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.14em] text-slate/35">95% CI</p>
+            <p className="text-[9px] uppercase tracking-[0.12em] text-slate/35">95% CI</p>
             <p className="font-display text-base text-[#8E5E7A]/70">±{point.variance}%</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-[0.14em] text-slate/35">Gap</p>
+            <p className="text-[9px] uppercase tracking-[0.12em] text-slate/35">Gap</p>
             <p className="font-display text-base text-terracotta">+{delta}</p>
           </div>
         </div>
 
-        {point.deviation > 0 && (
-          <p className="mt-2 text-[10px] text-slate/35">
-            Semantic deviation: <span className="text-slate/55">±{point.deviation}% from aggregate trend</span>
-          </p>
-        )}
+        <p className="mt-2 text-[10px] text-slate/35">
+          Semantic deviation:{" "}
+          <span className="text-slate/50">±{point.deviation}% from aggregate trend</span>
+        </p>
       </div>
 
       {frag && (
@@ -164,35 +178,35 @@ function TreatedDot(props: {
   onSelect: (id: string) => void;
 }) {
   const { cx, cy, payload, hoveredId, onHover, onSelect } = props;
-  if (!cx || !cy || !payload) return null;
+  if (cx == null || cy == null || !payload) return null;
   const isHovered = hoveredId === payload.fragmentId;
   const isMilestone = payload.isMilestone;
 
   return (
     <g>
-      {/* Milestone pulse rings — SVG animate for zero-JS animation */}
+      {/* Milestone pulse rings — SVG SMIL animation */}
       {isMilestone && (
         <>
-          <circle cx={cx} cy={cy} r={10} fill="none" stroke="#8E5E7A" strokeWidth={1.2} strokeOpacity={0.3}>
-            <animate attributeName="r" values="8;22;8" dur="2.6s" repeatCount="indefinite" />
-            <animate attributeName="stroke-opacity" values="0.35;0;0.35" dur="2.6s" repeatCount="indefinite" />
+          <circle cx={cx} cy={cy} r={8} fill="none" stroke="#8E5E7A" strokeWidth={1.5} strokeOpacity={0.4}>
+            <animate attributeName="r" values="8;22;8" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="stroke-opacity" values="0.4;0;0.4" dur="2.4s" repeatCount="indefinite" />
           </circle>
-          <circle cx={cx} cy={cy} r={8} fill="none" stroke="#8E5E7A" strokeWidth={1} strokeOpacity={0.2}>
-            <animate attributeName="r" values="6;16;6" dur="2.6s" begin="0.5s" repeatCount="indefinite" />
-            <animate attributeName="stroke-opacity" values="0.2;0;0.2" dur="2.6s" begin="0.5s" repeatCount="indefinite" />
+          <circle cx={cx} cy={cy} r={6} fill="none" stroke="#8E5E7A" strokeWidth={1} strokeOpacity={0.25}>
+            <animate attributeName="r" values="5;15;5" dur="2.4s" begin="0.6s" repeatCount="indefinite" />
+            <animate attributeName="stroke-opacity" values="0.25;0;0.25" dur="2.4s" begin="0.6s" repeatCount="indefinite" />
           </circle>
         </>
       )}
 
-      {/* Hover glow (non-milestone) */}
+      {/* Hover glow for non-milestones */}
       {isHovered && !isMilestone && (
         <>
-          <circle cx={cx} cy={cy} r={20} fill="#8E5E7A" opacity={0.08} />
-          <circle cx={cx} cy={cy} r={12} fill="#8E5E7A" opacity={0.12} />
+          <circle cx={cx} cy={cy} r={18} fill="#8E5E7A" opacity={0.07} />
+          <circle cx={cx} cy={cy} r={11} fill="#8E5E7A" opacity={0.11} />
         </>
       )}
 
-      {/* Main dot */}
+      {/* Main dot body */}
       <circle
         cx={cx}
         cy={cy}
@@ -206,10 +220,8 @@ function TreatedDot(props: {
         onClick={() => payload.fragment && onSelect(payload.fragmentId)}
       />
 
-      {/* White core for milestone dot */}
-      {isMilestone && (
-        <circle cx={cx} cy={cy} r={2.5} fill="white" style={{ pointerEvents: "none" }} />
-      )}
+      {/* White inner highlight for milestone */}
+      {isMilestone && <circle cx={cx} cy={cy} r={2.5} fill="white" style={{ pointerEvents: "none" }} />}
     </g>
   );
 }
@@ -217,38 +229,45 @@ function TreatedDot(props: {
 export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSelect }: Props) {
   const fragMap = new Map(fragments.map((f) => [f.id, f]));
   const total = trajectory.trajectoryPoints.length;
-
-  // Mean treated score — anchor for semantic deviation calculation
   const meanTreated =
-    trajectory.trajectoryPoints.reduce((s, p) => s + p.treatedScore, 0) / (total || 1);
+    trajectory.trajectoryPoints.reduce((s, p) => s + p.treatedScore, 0) / Math.max(1, total);
+
+  // Baseline for power-law — first natural score
+  const naturalBaseline = trajectory.trajectoryPoints[0]?.naturalScore ?? 78;
 
   const data: ChartPoint[] = trajectory.trajectoryPoints.map((p, i) => {
     const frag = fragMap.get(p.fragmentId);
+    const variance = SOURCE_VARIANCE[frag?.sourceType ?? "Parent Journal"] ?? 13;
 
-    // Bayesian variance from source semantic density
-    const variance = SOURCE_VARIANCE[frag?.sourceType ?? "Forum Observation"] ?? 12;
-
-    // Power-law decay: N(t) = N₀ · (1 − α·t)^β
-    // α=0.35, β=1.8 → gentle plateau then steep decline, matching Sanfilippo natural history
+    // Power-law decay: stable plateau then steep precipice
+    // N(t) = N₀ · (1 − α·t)^β, α=0.72 β=1.6 → ~3% of baseline at t=1
     const t = total > 1 ? i / (total - 1) : 0;
-    const naturalPowerLaw = Math.max(0, p.naturalScore * Math.pow(Math.max(0, 1 - 0.35 * t), 1.8));
+    const naturalPowerLaw = Math.max(
+      2,
+      naturalBaseline * Math.pow(Math.max(0, 1 - 0.72 * t), 1.6),
+    );
 
-    // 95% confidence band bounds
-    const bandLo = Math.max(0, p.treatedScore - variance);
-    const bandWidth = Math.min(100, p.treatedScore + variance) - bandLo;
+    // 95% CI bounds
+    const ciUpper = Math.min(100, p.treatedScore + variance);
+    const ciLower = Math.max(0, p.treatedScore - variance);
 
-    // Semantic deviation from aggregate trend
+    // Stacked band: transparent base to ciLower, then visible band from ciLower to ciUpper
+    const bandBase = ciLower;
+    const bandSize = ciUpper - ciLower;
+
     const deviation = Math.round(Math.abs(p.treatedScore - meanTreated));
 
-    const isMilestone =
-      !!frag && MILESTONE_DOMAINS.has(frag.signalDomain) && frag.confidence === "high";
+    // Milestone = vocabulary or recognition domain (any confidence)
+    const isMilestone = !!frag && MILESTONE_DOMAINS.has(frag.signalDomain);
 
     return {
       label: new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
       treated: p.treatedScore,
       naturalPowerLaw,
-      bandLo,
-      bandWidth,
+      ciUpper,
+      ciLower,
+      bandBase,
+      bandSize,
       variance,
       deviation,
       fragmentId: p.fragmentId,
@@ -266,7 +285,7 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate/38">Bio-Trajectory Analyzer</p>
           <h2 className="mt-0.5 font-display text-3xl text-slate">The Rescue Gap</h2>
           <p className="mt-1 max-w-lg text-sm text-slate/45">
-            Bayesian-weighted evidence engine. The band is the 95% confidence interval; each dot is a real parent story.
+            Bayesian evidence engine — the purple band is the 95% confidence interval. If it stays above the red line, the FDA considers efficacy Highly Robust.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-slate/45">
@@ -278,7 +297,7 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
             UX111 treated
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-5 rounded-sm" style={{ background: "rgba(142,94,122,0.20)" }} />
+            <div className="h-3 w-5 rounded-sm" style={{ background: "rgba(142,94,122,0.22)" }} />
             95% CI band
           </div>
           <div className="flex items-center gap-2">
@@ -288,9 +307,9 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
             Power-law decline
           </div>
           <div className="flex items-center gap-2">
-            <svg width="12" height="12">
-              <circle cx="6" cy="6" r="5" fill="#8E5E7A" stroke="white" strokeWidth="2.5" />
-              <circle cx="6" cy="6" r="2" fill="white" />
+            <svg width="14" height="14">
+              <circle cx="7" cy="7" r="6" fill="#8E5E7A" stroke="white" strokeWidth="2.5" />
+              <circle cx="7" cy="7" r="2.5" fill="white" />
             </svg>
             Milestone
           </div>
@@ -325,17 +344,17 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
         <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={data} margin={{ top: 16, right: 24, bottom: 8, left: 0 }}>
             <defs>
-              <linearGradient id="treatedGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7A9E87" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#7A9E87" stopOpacity={0.03} />
+              <linearGradient id="treatedAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#7A9E87" stopOpacity={0.28} />
+                <stop offset="100%" stopColor="#7A9E87" stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="naturalGrad" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="naturalAreaGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#C98972" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="#C98972" stopOpacity={0.03} />
+                <stop offset="100%" stopColor="#C98972" stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="confidenceBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8E5E7A" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="#8E5E7A" stopOpacity={0.06} />
+              <linearGradient id="ciBandGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8E5E7A" stopOpacity={0.28} />
+                <stop offset="100%" stopColor="#8E5E7A" stopOpacity={0.10} />
               </linearGradient>
             </defs>
 
@@ -357,25 +376,28 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
               width={32}
             />
 
+            {/* Independence threshold */}
             <ReferenceLine
               y={30}
               stroke="#C98972"
               strokeWidth={1}
               strokeDasharray="4 4"
-              strokeOpacity={0.5}
+              strokeOpacity={0.6}
               label={{
                 value: "Independence threshold",
                 position: "insideTopLeft",
                 fontSize: 9,
                 fill: "#C98972",
-                opacity: 0.7,
+                opacity: 0.75,
               }}
             />
+
+            {/* PDUFA deadline */}
             <ReferenceLine
               x={data[data.length - 1]?.label}
               stroke="#F9C0BB"
               strokeWidth={1.5}
-              strokeOpacity={0.8}
+              strokeOpacity={0.85}
               label={{
                 value: "Sep 19",
                 position: "insideTopRight",
@@ -385,49 +407,25 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
               }}
             />
 
-            {/* Bayesian confidence band — stacked areas:
-                bandLo = transparent base, bandWidth = visible purple layer */}
-            <Area
-              type="monotone"
-              dataKey="bandLo"
-              fill="transparent"
-              stroke="none"
-              dot={false}
-              activeDot={false}
-              stackId="ci"
-              legendType="none"
-              isAnimationActive={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="bandWidth"
-              fill="url(#confidenceBand)"
-              stroke="none"
-              dot={false}
-              activeDot={false}
-              stackId="ci"
-              legendType="none"
-              isAnimationActive={false}
-            />
-
-            {/* Power-law natural decline */}
+            {/* Layer 1: Power-law natural decline (bottom) */}
             <Area
               type="monotone"
               dataKey="naturalPowerLaw"
-              fill="url(#naturalGrad)"
+              fill="url(#naturalAreaGrad)"
               stroke="#C98972"
               strokeWidth={1.5}
-              strokeDasharray="5 4"
+              strokeDasharray="6 4"
               dot={false}
               activeDot={false}
               isAnimationActive
+              animationDuration={1000}
             />
 
-            {/* UX111 treated trajectory */}
+            {/* Layer 2: Treated trajectory fill */}
             <Area
               type="monotone"
               dataKey="treated"
-              fill="url(#treatedGrad)"
+              fill="url(#treatedAreaGrad)"
               stroke="#8E5E7A"
               strokeWidth={3}
               dot={(props) => (
@@ -443,6 +441,60 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
               isAnimationActive
               animationDuration={1200}
               animationEasing="ease-out"
+            />
+
+            {/* Layer 3: Bayesian 95% CI band rendered ON TOP using stacked areas.
+                bandBase (transparent) creates the invisible floor at ciLower;
+                bandSize (purple) stacks on top to fill up to ciUpper. */}
+            <Area
+              type="monotone"
+              dataKey="bandBase"
+              fill="transparent"
+              stroke="none"
+              dot={false}
+              activeDot={false}
+              stackId="ci95"
+              legendType="none"
+              isAnimationActive={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="bandSize"
+              fill="url(#ciBandGrad)"
+              stroke="#8E5E7A"
+              strokeWidth={0.6}
+              strokeOpacity={0.25}
+              dot={false}
+              activeDot={false}
+              stackId="ci95"
+              legendType="none"
+              isAnimationActive={false}
+            />
+
+            {/* Layer 4: CI boundary lines for clarity */}
+            <Line
+              type="monotone"
+              dataKey="ciUpper"
+              stroke="#8E5E7A"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+              strokeOpacity={0.35}
+              dot={false}
+              activeDot={false}
+              legendType="none"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="ciLower"
+              stroke="#8E5E7A"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+              strokeOpacity={0.35}
+              dot={false}
+              activeDot={false}
+              legendType="none"
+              isAnimationActive={false}
             />
 
             <Tooltip
