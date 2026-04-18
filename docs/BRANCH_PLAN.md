@@ -30,22 +30,23 @@ Owns:
 - Owner: AI / RAG
 
 Owns:
-- `frontend/lib/types.ts`
 - `frontend/lib/view-types.ts`
-- `frontend/lib/data.ts`
-- `frontend/lib/logic.ts`
+- `shared/types.ts`
+- `shared/api.ts`
 
 ### Backend branch
 - Branch name: `feat/backend-delivery`
 - Owner: Backend
 
 Owns:
-- `frontend/app/api/cases/[caseId]/route.ts`
-- `frontend/app/api/fragments/route.ts`
-- `frontend/app/api/claims/route.ts`
-- `frontend/app/api/report/[caseId]/route.ts`
+- `backend/src/server.ts`
+- `backend/src/routes.ts`
+- `backend/src/service.ts`
+- `backend/src/projection-repository.ts`
+- `backend/src/ingestion/`
 - `frontend/app/layout.tsx`
 - `frontend/package.json`
+- `backend/package.json`
 - `README.md`
 
 ## Setup Commands
@@ -79,7 +80,10 @@ Reason:
 - Before merging to `main`, run:
 
 ```bash
-cd frontend
+cd backend
+npm run typecheck
+npm run build
+cd ../frontend
 npm run typecheck
 npm run build
 ```

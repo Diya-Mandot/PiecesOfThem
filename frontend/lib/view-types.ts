@@ -1,3 +1,3 @@
-import type { getReportPayload } from "@/lib/logic";
+import type { GetReportResponse } from "@shared/api";
 
-export type ReturnTypeOfReportPayload = NonNullable<ReturnType<typeof getReportPayload>>;
+export type ReturnTypeOfReportPayload = GetReportResponse;
