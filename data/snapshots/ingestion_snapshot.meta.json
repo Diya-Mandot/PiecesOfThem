@@ -1,0 +1,19 @@
+{
+  "snapshot_file": "data/snapshots/ingestion_snapshot.sql",
+  "exported_at_utc": "2026-04-18T01:59:33Z",
+  "database": "piecesofthem",
+  "schema": "ingestion",
+  "counts": {
+    "seed_sources": 17,
+    "source_documents": 24,
+    "document_chunks": 80,
+    "extraction_runs": 27,
+    "extracted_datapoints": 187,
+    "extraction_issues": 18
+  },
+  "notes": [
+    "This snapshot contains repo-shareable local ingestion data exported from PostgreSQL.",
+    "Import pipeline/sql/init.sql before importing this snapshot.",
+    "This snapshot is data-only and assumes the ingestion schema already exists."
+  ]
+}
