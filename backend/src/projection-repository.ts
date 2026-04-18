@@ -1,166 +1,194 @@
 import type { Pool } from "pg";
 
-export type ProjectionRow = {
-  datapoint_id: number;
-  extraction_run_id: number;
-  source_document_id: number;
-  chunk_id: number | null;
-  datapoint_type: string;
-  subject_label: string | null;
+export type CaseCandidate = {
+  case_id: string;
+  label: string;
   disease_subtype: string | null;
   trial_program: string | null;
-  value_json: Record<string, unknown>;
+  treatment_status: string | null;
+};
+
+export type FragmentRow = {
+  external_id: string;
+  case_id: string;
+  source_document_id: number;
+  fragment_date: string;
+  source_type: string;
+  modality: string;
+  title: string;
+  excerpt: string;
+  tags_json: string[];
+  signal_domain: string;
   confidence: string;
-  evidence_quote: string;
-  char_start: number | null;
-  char_end: number | null;
-  chunk_text: string | null;
-  chunk_index: number | null;
+  raw_ref: string;
+  treatment_status: string | null;
+  trial_program: string | null;
   document_title: string | null;
   source_url: string;
-  content_type: string | null;
   fetched_at: string | null;
   seed_id: string;
   seed_label: string;
-  seed_source_type: string;
-  platform: string;
+  disease_subtype: string | null;
 };
 
-type SubjectCandidate = {
-  subject_label: string;
-  datapoint_count: number;
-  functional_count: number;
-  claim_count: number;
-  trial_count: number;
+export type ClaimRow = {
+  external_id: string;
+  case_id: string;
+  statement: string;
+  signal_domain: string;
+  trend: string;
+  confidence: string;
+  treatment_status: string | null;
+  trial_program: string | null;
+  fragment_ids: string[];
 };
 
 export class ProjectionRepository {
   constructor(private readonly pool: Pool) {}
 
-  async resolveSubjectLabel(caseId: string): Promise<string | null> {
-    const candidates = await this.listSubjectCandidates();
-
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    if (caseId === "demo-child-a") {
-      return candidates[0].subject_label;
-    }
-
-    const exact = candidates.find((candidate) => slugify(candidate.subject_label) === caseId);
-    return exact?.subject_label ?? null;
-  }
-
-  async listCaseProjectionRows(subjectLabel: string): Promise<ProjectionRow[]> {
+  async listCaseCandidates(): Promise<CaseCandidate[]> {
     const result = await this.pool.query(
       `
         SELECT
-          ed.id AS datapoint_id,
-          ed.extraction_run_id,
-          ed.source_document_id,
-          ed.chunk_id,
-          ed.datapoint_type,
-          ed.subject_label,
-          ed.disease_subtype,
-          ed.trial_program,
-          ed.value_json,
-          ed.confidence,
-          ed.evidence_quote,
-          ed.char_start,
-          ed.char_end,
-          dc.chunk_text,
-          dc.chunk_index,
+          ef.case_id,
+          MIN(ss.label) AS label,
+          NULLIF(MIN(COALESCE(ss.disease_subtype, '')), '') AS disease_subtype,
+          NULLIF(MIN(COALESCE(ef.trial_program, ss.trial_program, '')), '') AS trial_program,
+          NULLIF(MIN(COALESCE(ef.treatment_status, '')), '') AS treatment_status
+        FROM ingestion.evidence_fragments ef
+        INNER JOIN ingestion.source_documents sd ON sd.id = ef.source_document_id
+        INNER JOIN ingestion.seed_sources ss ON ss.id = sd.seed_source_id
+        GROUP BY ef.case_id
+        ORDER BY ef.case_id ASC
+      `,
+    );
+
+    return result.rows.map((row: unknown) => mapCaseCandidate(row as Record<string, unknown>));
+  }
+
+  async listCaseFragments(caseId: string): Promise<FragmentRow[]> {
+    const result = await this.pool.query(
+      `
+        SELECT
+          ef.external_id,
+          ef.case_id,
+          ef.source_document_id,
+          ef.fragment_date,
+          ef.source_type,
+          ef.modality,
+          ef.title,
+          ef.excerpt,
+          ef.tags_json,
+          ef.signal_domain,
+          ef.confidence,
+          ef.raw_ref,
+          ef.treatment_status,
+          COALESCE(ef.trial_program, ss.trial_program) AS trial_program,
           sd.title AS document_title,
           sd.source_url,
-          sd.content_type,
           sd.fetched_at,
           ss.seed_id,
           ss.label AS seed_label,
-          ss.source_type AS seed_source_type,
-          ss.platform
-        FROM ingestion.extracted_datapoints ed
-        INNER JOIN ingestion.source_documents sd ON sd.id = ed.source_document_id
+          NULLIF(ss.disease_subtype, '') AS disease_subtype
+        FROM ingestion.evidence_fragments ef
+        INNER JOIN ingestion.source_documents sd ON sd.id = ef.source_document_id
         INNER JOIN ingestion.seed_sources ss ON ss.id = sd.seed_source_id
-        LEFT JOIN ingestion.document_chunks dc ON dc.id = ed.chunk_id
-        WHERE ed.subject_label = $1
-        ORDER BY COALESCE(sd.fetched_at, ed.created_at) ASC, ed.id ASC
+        WHERE ef.case_id = $1
+        ORDER BY ef.fragment_date ASC, ef.external_id ASC
       `,
-      [subjectLabel],
+      [caseId],
     );
 
-    return result.rows.map((row: unknown) => mapProjectionRow(row as Record<string, unknown>));
+    return result.rows.map((row: unknown) => mapFragmentRow(row as Record<string, unknown>));
   }
 
-  private async listSubjectCandidates(): Promise<SubjectCandidate[]> {
+  async listCaseClaims(caseId: string): Promise<ClaimRow[]> {
     const result = await this.pool.query(
       `
         SELECT
-          ed.subject_label,
-          COUNT(*) AS datapoint_count,
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'functional_signal') AS functional_count,
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'outcome_claim') AS claim_count,
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'trial_participation') AS trial_count
-        FROM ingestion.extracted_datapoints ed
-        WHERE ed.subject_label IS NOT NULL
-          AND btrim(ed.subject_label) <> ''
-        GROUP BY ed.subject_label
-        ORDER BY
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'trial_participation') DESC,
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'functional_signal') DESC,
-          COUNT(*) FILTER (WHERE ed.datapoint_type = 'outcome_claim') DESC,
-          COUNT(*) DESC,
-          ed.subject_label ASC
+          c.external_id,
+          c.case_id,
+          c.statement,
+          c.signal_domain,
+          c.trend,
+          c.confidence,
+          c.treatment_status,
+          c.trial_program,
+          COALESCE(
+            array_agg(cf.fragment_external_id ORDER BY cf.fragment_order)
+              FILTER (WHERE cf.fragment_external_id IS NOT NULL),
+            ARRAY[]::text[]
+          ) AS fragment_ids
+        FROM ingestion.claims c
+        LEFT JOIN ingestion.claim_fragments cf ON cf.claim_id = c.id
+        WHERE c.case_id = $1
+        GROUP BY c.id
+        ORDER BY c.external_id ASC
       `,
+      [caseId],
     );
 
-    return result.rows.map((row: unknown) => {
-      const record = row as Record<string, unknown>;
-      return {
-        subject_label: String(record.subject_label),
-        datapoint_count: Number(record.datapoint_count),
-        functional_count: Number(record.functional_count),
-        claim_count: Number(record.claim_count),
-        trial_count: Number(record.trial_count),
-      };
-    });
+    return result.rows.map((row: unknown) => mapClaimRow(row as Record<string, unknown>));
   }
 }
 
-function mapProjectionRow(record: Record<string, unknown>): ProjectionRow {
+function mapCaseCandidate(record: Record<string, unknown>): CaseCandidate {
   return {
-    datapoint_id: Number(record.datapoint_id),
-    extraction_run_id: Number(record.extraction_run_id),
-    source_document_id: Number(record.source_document_id),
-    chunk_id: record.chunk_id === null ? null : Number(record.chunk_id),
-    datapoint_type: String(record.datapoint_type),
-    subject_label: record.subject_label ? String(record.subject_label) : null,
-    disease_subtype: record.disease_subtype ? String(record.disease_subtype) : null,
-    trial_program: record.trial_program ? String(record.trial_program) : null,
-    value_json: (record.value_json ?? {}) as Record<string, unknown>,
-    confidence: String(record.confidence),
-    evidence_quote: String(record.evidence_quote),
-    char_start: record.char_start === null ? null : Number(record.char_start),
-    char_end: record.char_end === null ? null : Number(record.char_end),
-    chunk_text: record.chunk_text ? String(record.chunk_text) : null,
-    chunk_index: record.chunk_index === null ? null : Number(record.chunk_index),
-    document_title: record.document_title ? String(record.document_title) : null,
-    source_url: String(record.source_url),
-    content_type: record.content_type ? String(record.content_type) : null,
-    fetched_at: record.fetched_at ? new Date(String(record.fetched_at)).toISOString() : null,
-    seed_id: String(record.seed_id),
-    seed_label: String(record.seed_label),
-    seed_source_type: String(record.seed_source_type),
-    platform: String(record.platform),
+    case_id: String(record.case_id),
+    label: String(record.label),
+    disease_subtype: toNullableString(record.disease_subtype),
+    trial_program: toNullableString(record.trial_program),
+    treatment_status: toNullableString(record.treatment_status),
   };
 }
 
-function slugify(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+function mapFragmentRow(record: Record<string, unknown>): FragmentRow {
+  return {
+    external_id: String(record.external_id),
+    case_id: String(record.case_id),
+    source_document_id: Number(record.source_document_id),
+    fragment_date: String(record.fragment_date),
+    source_type: String(record.source_type),
+    modality: String(record.modality),
+    title: String(record.title),
+    excerpt: String(record.excerpt),
+    tags_json: toStringArray(record.tags_json),
+    signal_domain: String(record.signal_domain),
+    confidence: String(record.confidence),
+    raw_ref: String(record.raw_ref),
+    treatment_status: toNullableString(record.treatment_status),
+    trial_program: toNullableString(record.trial_program),
+    document_title: toNullableString(record.document_title),
+    source_url: String(record.source_url),
+    fetched_at: record.fetched_at ? new Date(String(record.fetched_at)).toISOString() : null,
+    seed_id: String(record.seed_id),
+    seed_label: String(record.seed_label),
+    disease_subtype: toNullableString(record.disease_subtype),
+  };
+}
+
+function mapClaimRow(record: Record<string, unknown>): ClaimRow {
+  return {
+    external_id: String(record.external_id),
+    case_id: String(record.case_id),
+    statement: String(record.statement),
+    signal_domain: String(record.signal_domain),
+    trend: String(record.trend),
+    confidence: String(record.confidence),
+    treatment_status: toNullableString(record.treatment_status),
+    trial_program: toNullableString(record.trial_program),
+    fragment_ids: toStringArray(record.fragment_ids),
+  };
+}
+
+function toNullableString(value: unknown) {
+  return value === null || value === undefined || value === "" ? null : String(value);
+}
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+
+  return [];
 }
