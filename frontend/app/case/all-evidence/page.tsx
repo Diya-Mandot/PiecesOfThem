@@ -2,7 +2,7 @@ import { DataUnavailable } from "@/components/data-unavailable";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { aggregateEvidenceId, getWorkbenchData } from "@/lib/api";
 
-export default async function DemoCasePage() {
+export default async function AllEvidencePage() {
   const workbench = await getWorkbenchData(aggregateEvidenceId);
 
   if (!workbench) {

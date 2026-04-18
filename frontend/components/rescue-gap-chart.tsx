@@ -372,7 +372,7 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
               tick={{ fontSize: 10, fill: "#B0A090" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `${v}`}
+              tickFormatter={(value: number) => `${value}`}
               width={32}
             />
 
@@ -428,7 +428,7 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
               fill="url(#treatedAreaGrad)"
               stroke="#8E5E7A"
               strokeWidth={3}
-              dot={(props) => (
+              dot={(props: { payload?: ChartPoint }) => (
                 <TreatedDot
                   key={props.payload?.fragmentId}
                   {...props}
@@ -498,7 +498,7 @@ export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSe
             />
 
             <Tooltip
-              content={(props) => (
+              content={(props: { active?: boolean; payload?: unknown }) => (
                 <NarrativeTooltip
                   active={props.active}
                   payload={props.payload as unknown as Array<{ payload: ChartPoint }>}

@@ -49,10 +49,10 @@ export function ReportPage({
               Home
             </Link>
             <Link
-              href="/case/demo-child-a"
+              href="/case/all-evidence"
               className="rounded-full bg-slate px-4 py-2 text-sm font-medium text-white transition hover:bg-rosewood"
             >
-              Back to Workbench
+              Back to Evidence Archive
             </Link>
             <button
               type="button"
@@ -153,6 +153,11 @@ export function ReportPage({
                     >
                       <div className="text-xs uppercase tracking-[0.18em] text-slate/45">
                         {citation.id} / {formatDate(citation.date)} / {citation.sourceType} / {citation.provenance}
+                      </div>
+                      <div className="mt-2 text-xs leading-5 text-slate/55">
+                        <div>Source: {citation.sourceLabel ?? "Unknown source"}</div>
+                        {citation.documentTitle ? <div>Document: {citation.documentTitle}</div> : null}
+                        {citation.sourceUrl ? <div className="break-all">URL: {citation.sourceUrl}</div> : null}
                       </div>
                       <p className="mt-3 text-sm leading-6 text-slate/78">{citation.excerpt}</p>
                     </div>

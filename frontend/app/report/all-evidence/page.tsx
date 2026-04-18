@@ -2,7 +2,7 @@ import { DataUnavailable } from "@/components/data-unavailable";
 import { ReportPage } from "@/components/report-page";
 import { aggregateEvidenceId, getReport } from "@/lib/api";
 
-export default async function DemoReportPage() {
+export default async function AllEvidenceReportPage() {
   const report = await getReport(aggregateEvidenceId);
 
   if (!report) {

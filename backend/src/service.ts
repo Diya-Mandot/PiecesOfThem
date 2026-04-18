@@ -30,6 +30,8 @@ const domainKeywords: Record<SignalDomain, string[]> = {
 
 const defaultDataHandling =
   "Projected from canonical evidence fragments and claims in the ingestion layer. Review support only; not a diagnosis, treatment recommendation, or approval recommendation.";
+const aggregateEvidenceId = "all-evidence";
+const aggregateEvidenceLabel = "All Evidence Findings";
 
 export class EvidenceService {
   constructor(private readonly repository: ProjectionRepository) {}
@@ -153,6 +155,10 @@ export class EvidenceService {
   }
 
   async getCaseBundle(caseId: string): Promise<CaseBundle | null> {
+    if (caseId === aggregateEvidenceId) {
+      return this.getAggregateBundle();
+    }
+
     const candidate = await this.resolveCaseCandidate(caseId);
 
     if (!candidate) {
@@ -185,6 +191,12 @@ export class EvidenceService {
       return null;
     }
 
+    // Preserve the stable frontend demo route by resolving it to the first
+    // available projected case when a real demo-specific case id is absent.
+    if (caseId === "demo-child-a") {
+      return candidates[0];
+    }
+
     const exactCase = candidates.find((candidate) => candidate.case_id === caseId);
     if (exactCase) {
       return exactCase;
@@ -192,6 +204,26 @@ export class EvidenceService {
 
     const slugMatch = candidates.find((candidate) => slugify(candidate.label) === caseId);
     return slugMatch ?? null;
+  }
+
+  private async getAggregateBundle(): Promise<CaseBundle | null> {
+    const [fragmentRows, claimRows] = await Promise.all([
+      this.repository.listAllFragments(),
+      this.repository.listAllClaims(),
+    ]);
+
+    if (fragmentRows.length === 0) {
+      return null;
+    }
+
+    const fragments = fragmentRows.map((row) => mapFragment(row)).sort((a, b) => a.date.localeCompare(b.date));
+    const claims = claimRows.map((row) => mapClaim(row));
+
+    return {
+      caseRecord: buildAggregateRecord(fragmentRows, fragments, claims),
+      fragments,
+      claims,
+    };
   }
 }
 
@@ -228,6 +260,32 @@ function resolveClaimCitations(claim: Claim, fragments: EvidenceFragment[]) {
   return fragments.filter((fragment) => claim.fragmentIds.includes(fragment.id));
 }
 
+function buildAggregateRecord(
+  fragmentRows: FragmentRow[],
+  fragments: EvidenceFragment[],
+  claims: Claim[],
+): CaseRecord {
+  const observationStart = fragments[0]?.date ?? new Date().toISOString();
+  const observationEnd = fragments[fragments.length - 1]?.date ?? new Date().toISOString();
+  const sourceDocumentCount = new Set(fragmentRows.map((row) => row.source_document_id)).size;
+  const sourceNarrativeCount = new Set(fragmentRows.map((row) => row.seed_id)).size;
+  const reportReadiness = deriveReportReadiness(fragments, claims);
+
+  return {
+    id: aggregateEvidenceId,
+    label: aggregateEvidenceLabel,
+    disease: "Sanfilippo Syndrome evidence archive",
+    therapy: "Cross-source evidence bundle",
+    observationStart,
+    observationEnd,
+    summary: `This archive bundles ${fragments.length} evidence findings across ${sourceNarrativeCount} source narratives, ${sourceDocumentCount} source documents, and ${claims.length} synthesized claims.`,
+    dataHandling: defaultDataHandling,
+    reviewWindow: `Aggregate evidence spanning ${observationStart} through ${observationEnd}. Source details are preserved on each citation.`,
+    provenanceSummary: `${fragments.length} real fragments, 0 synthetic fragments, ${claims.filter((claim) => claim.provenance === "mixed").length} mixed claims.`,
+    reportReadiness,
+  };
+}
+
 function mapFragment(row: FragmentRow): EvidenceFragment {
   return {
     id: row.external_id,
@@ -243,6 +301,9 @@ function mapFragment(row: FragmentRow): EvidenceFragment {
     confidence: normalizeConfidence(row.confidence),
     rawRef: row.raw_ref,
     provenance: "real",
+    sourceLabel: row.seed_label,
+    sourceUrl: row.source_url,
+    documentTitle: row.document_title ?? undefined,
   };
 }
 
