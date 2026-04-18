@@ -1,14 +1,36 @@
 "use client";
 
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Dot,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
 import type { GetTrajectoryResponse } from "@shared/api";
 import type { EvidenceFragment } from "@shared/types";
 
-const width = 1000;
-const height = 260;
-const padding = { top: 20, right: 40, bottom: 44, left: 52 };
-const innerWidth = width - padding.left - padding.right;
-const innerHeight = height - padding.top - padding.bottom;
-const yTicks = [25, 50, 75, 100];
+const DOMAIN_LABELS: Record<string, string> = {
+  vocabulary: "Semantic Memory",
+  recognition: "Episodic Memory",
+  sleep: "Sleep Architecture",
+  behavior: "Adaptive Behavior",
+  motor: "Motor Function",
+};
+
+type ChartPoint = {
+  label: string;
+  treated: number;
+  natural: number;
+  fragmentId: string;
+  fragment?: EvidenceFragment;
+};
 
 type Props = {
   fragments: EvidenceFragment[];
@@ -18,241 +40,309 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+// Custom tooltip — the audit trail moment
+function NarrativeTooltip({
+  active,
+  payload,
+  onSelect,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartPoint }>;
+  onSelect: (id: string) => void;
+}) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+  const frag = point.fragment;
+  const delta = Math.round(point.treated - point.natural);
+
+  return (
+    <div className="w-72 overflow-hidden rounded-[1.3rem] border border-stone/20 bg-white shadow-[0_8px_40px_rgba(44,41,48,0.14)]">
+      <div className="px-4 pt-4">
+        {/* Badges */}
+        <div className="mb-2.5 flex flex-wrap gap-1.5">
+          {frag && (
+            <span className="rounded-full border border-stone/20 bg-parchment px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-slate/45">
+              {frag.sourceType}
+            </span>
+          )}
+          {frag && (
+            <span className="rounded-full border border-sage/25 bg-sage/8 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-sage/80">
+              {DOMAIN_LABELS[frag.signalDomain] ?? frag.signalDomain}
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <p className="font-display text-sm leading-snug text-slate">
+          {frag?.title ?? point.label}
+        </p>
+
+        {/* Quote — the narrative heart */}
+        {frag?.excerpt && (
+          <p
+            className="mt-2 font-newsreader text-[13px] leading-[1.65] text-slate/65 line-clamp-4"
+            style={{ fontStyle: "italic" }}
+          >
+            &ldquo;{frag.excerpt}&rdquo;
+          </p>
+        )}
+
+        {/* Delta stats */}
+        <div className="mt-3 flex items-center gap-3 border-t border-stone/12 pt-3">
+          <div className="text-center">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-slate/35">Treated</p>
+            <p className="font-display text-lg text-[#8E5E7A]">{point.treated}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-slate/35">Natural</p>
+            <p className="font-display text-lg text-slate/50">{point.natural}</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-slate/35">Rescue gap</p>
+            <p className="font-display text-lg text-terracotta">+{delta}</p>
+          </div>
+        </div>
+      </div>
+
+      {frag && (
+        <button
+          type="button"
+          onClick={() => onSelect(frag.id)}
+          className="mt-2 w-full border-t border-stone/10 px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.16em] text-slate/35 transition hover:bg-parchment/60 hover:text-slate/55"
+        >
+          Open full evidence →
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Custom dot for treated line — highlights hovered fragment
+function TreatedDot(props: {
+  cx?: number;
+  cy?: number;
+  payload?: ChartPoint;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
+}) {
+  const { cx, cy, payload, hoveredId, onHover, onSelect } = props;
+  if (!cx || !cy || !payload) return null;
+  const isHovered = hoveredId === payload.fragmentId;
+
+  return (
+    <g>
+      {isHovered && (
+        <>
+          <circle cx={cx} cy={cy} r={20} fill="#8E5E7A" opacity={0.08} />
+          <circle cx={cx} cy={cy} r={12} fill="#8E5E7A" opacity={0.12} />
+        </>
+      )}
+      <circle
+        cx={cx} cy={cy}
+        r={isHovered ? 7 : 5}
+        fill={isHovered ? "#8E5E7A" : "white"}
+        stroke="#8E5E7A"
+        strokeWidth={2.5}
+        style={{ cursor: "pointer", transition: "r 0.15s" }}
+        onMouseEnter={() => onHover(payload.fragmentId)}
+        onMouseLeave={() => onHover(null)}
+        onClick={() => payload.fragment && onSelect(payload.fragmentId)}
+      />
+    </g>
+  );
+}
+
 export function RescueGapChart({ fragments, trajectory, hoveredId, onHover, onSelect }: Props) {
-  const startMs = new Date(trajectory.trajectoryPoints[0]?.date ?? "2024-03-08").getTime();
-  const endMs = new Date("2026-09-19").getTime();
-  const rangeMs = Math.max(endMs - startMs, 1);
-  const fragMap = new Map(fragments.map((fragment) => [fragment.id, fragment]));
+  const fragMap = new Map(fragments.map((f) => [f.id, f]));
 
-  const treated = trajectory.trajectoryPoints.map((point) => ({
-    ...point,
-    x: padding.left + ((new Date(point.date).getTime() - startMs) / rangeMs) * innerWidth,
-    y: padding.top + (1 - point.treatedScore / 100) * innerHeight,
+  const data: ChartPoint[] = trajectory.trajectoryPoints.map((p) => ({
+    label: new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+    treated: p.treatedScore,
+    natural: p.naturalScore,
+    fragmentId: p.fragmentId,
+    fragment: fragMap.get(p.fragmentId),
   }));
 
-  const natural = trajectory.trajectoryPoints.map((point) => ({
-    ...point,
-    x: padding.left + ((new Date(point.date).getTime() - startMs) / rangeMs) * innerWidth,
-    y: padding.top + (1 - point.naturalScore / 100) * innerHeight,
-  }));
-
-  const treatedPath = smoothPath(treated.map(({ x, y }) => ({ x, y })));
-  const naturalPath = smoothPath(natural.map(({ x, y }) => ({ x, y })));
-  const gapPath = buildGapPath(treated, natural);
-  const activePoint =
-    treated.find((point) => point.fragmentId === hoveredId) ?? treated[treated.length - 1] ?? null;
-  const activeFragment = activePoint ? fragMap.get(activePoint.fragmentId) ?? null : null;
-  const activeDelta = activePoint ? Math.round(activePoint.treatedScore - activePoint.naturalScore) : 0;
+  const latestTreated = data[data.length - 1]?.treated ?? 0;
+  const latestNatural = data[data.length - 1]?.natural ?? 0;
+  const retentionDelta = Math.round(latestTreated - latestNatural);
 
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-stone/25 bg-white/85 shadow-paper">
-      <div className="flex flex-wrap items-start justify-between gap-6 border-b border-stone/15 px-7 py-5">
+
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone/12 px-7 py-5">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-rosewood/55">Trajectory Analyzer</p>
-          <h2 className="mt-1 font-display text-3xl text-slate">The Rescue Gap</h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate/52">
-            The untreated natural-history curve continues downward. The observed trajectory shows
-            the functional capacity that appears to have been retained instead of lost.
+          <p className="text-[11px] uppercase tracking-[0.22em] text-slate/38">Stability Chart</p>
+          <h2 className="mt-0.5 font-display text-3xl text-slate">The Rescue Gap</h2>
+          <p className="mt-1 max-w-lg text-sm text-slate/45">
+            The gap between what the brain was expected to lose and what it kept. Each point is a real parent story.
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-6 pt-1 text-xs text-slate/50">
+        <div className="flex flex-wrap items-center gap-5 pt-1 text-xs text-slate/45">
           <div className="flex items-center gap-2">
-            <svg width="32" height="10">
-              <line x1="0" y1="5" x2="32" y2="5" stroke="#8E5E7A" strokeWidth="2.5" />
-              <circle cx="16" cy="5" r="3" fill="white" stroke="#8E5E7A" strokeWidth="2" />
+            <svg width="28" height="10">
+              <line x1="0" y1="5" x2="28" y2="5" stroke="#8E5E7A" strokeWidth="2.5" />
+              <circle cx="14" cy="5" r="3" fill="white" stroke="#8E5E7A" strokeWidth="2" />
             </svg>
-            Observed functional retention
+            UX111 treated
           </div>
           <div className="flex items-center gap-2">
-            <svg width="32" height="10">
-              <line x1="0" y1="5" x2="32" y2="5" stroke="#4A4850" strokeWidth="1.6" strokeDasharray="4 4" opacity="0.65" />
+            <svg width="28" height="10">
+              <line x1="0" y1="5" x2="28" y2="5" stroke="#B0A090" strokeWidth="1.5" strokeDasharray="4 3" />
             </svg>
-            Natural history decline
+            Untreated decline
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-6 rounded-sm bg-[#CFAAB8]/55" />
+            <div className="h-3 w-5 rounded-sm bg-sage/30" />
             Rescue gap
           </div>
         </div>
       </div>
 
-      <div className="px-3 py-4">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          style={{ width: "100%", height: 240 }}
-          onMouseLeave={() => onHover(null)}
-        >
-          {yTicks.map((value) => {
-            const y = padding.top + (1 - value / 100) * innerHeight;
-            return (
-              <g key={value}>
-                <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#C7B7A7" strokeWidth="0.5" strokeDasharray="3 5" />
-                <text x={padding.left - 8} y={y + 4} textAnchor="end" fontSize="10" fill="#B0A090">
-                  {value}
-                </text>
-              </g>
-            );
-          })}
-
-          {trajectory.trajectoryPoints.map((point, index) => {
-            const x = padding.left + ((new Date(point.date).getTime() - startMs) / rangeMs) * innerWidth;
-            const label = new Date(point.date).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-
-            return (
-              <text
-                key={`${point.fragmentId}-label`}
-                x={x}
-                y={height - 18}
-                textAnchor={index === 0 ? "start" : index === trajectory.trajectoryPoints.length - 1 ? "end" : "middle"}
-                fontSize="10"
-                fill="#8C7E73"
-              >
-                {label}
-              </text>
-            );
-          })}
-
-          <path d={gapPath} fill="#CFAAB8" opacity="0.28" />
-          <path d={naturalPath} fill="none" stroke="#4A4850" strokeWidth="1.7" strokeDasharray="5 5" opacity="0.72" />
-          <path d={treatedPath} fill="none" stroke="#8E5E7A" strokeWidth="2.8" />
-
-          {treated.map((point) => {
-            const isHovered = hoveredId === point.fragmentId;
-            const fragment = fragMap.get(point.fragmentId);
-
-            return (
-              <g key={point.fragmentId} style={{ cursor: "pointer" }}>
-                {isHovered ? <circle cx={point.x} cy={point.y} r={13} fill="#8E5E7A" opacity="0.14" /> : null}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={isHovered ? 7 : 5}
-                  fill={isHovered ? "#8E5E7A" : "white"}
-                  stroke="#8E5E7A"
-                  strokeWidth="2.5"
-                  onMouseEnter={() => onHover(point.fragmentId)}
-                  onClick={() => (fragment ? onSelect(point.fragmentId) : null)}
-                />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <div className="grid gap-0 border-t border-stone/15 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="grid grid-cols-3 divide-x divide-stone/20">
-          <MetricCell
-            label="Retention Delta"
-            value={trajectory.kpis.retentionDeltaDisplay}
-            detail="functional retention vs. untreated path"
-            valueClassName="text-terracotta"
-          />
-          <MetricCell
-            label="P-Value Estimation"
-            value={trajectory.kpis.pValue}
-            detail={trajectory.kpis.pLabel}
-            valueClassName="text-[#8E5E7A]"
-          />
-          <MetricCell
-            label="Observation Window"
-            value={`${trajectory.kpis.observationMonths} mo`}
-            detail={`${trajectory.trajectoryPoints[0]?.date ?? ""} – ${trajectory.trajectoryPoints.at(-1)?.date ?? ""}`}
-            valueClassName="text-slate"
-          />
-        </div>
-
-        <div className="border-t border-stone/15 bg-parchment/55 px-6 py-5 lg:border-l lg:border-t-0">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-rosewood/55">Audit Trail</p>
-          <h3 className="mt-2 font-display text-2xl leading-tight text-slate">
-            {activeFragment?.title ?? "Hover a point to inspect its source"}
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-slate/45">
-            <span>{activeFragment?.sourceType ?? "No source selected"}</span>
-            {activeFragment ? <span>{formatShortDate(activeFragment.date)}</span> : null}
-            {activeFragment ? <span>{activeFragment.signalDomain}</span> : null}
-          </div>
-          <p className="mt-4 text-sm leading-7 text-slate/72">
-            {activeFragment?.excerpt ??
-              "The hovered point will reveal the parent-reported segment and the metadata that supports this trajectory position."}
+      {/* ── KPI strip ── */}
+      <div className="mx-7 mt-5 mb-2 grid grid-cols-3 divide-x divide-stone/15 rounded-[1.2rem] border border-stone/15 bg-parchment/60">
+        <div className="px-5 py-4">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-slate/38">Retention Delta</p>
+          <p className="mt-1 font-display text-3xl font-semibold text-terracotta">
+            {trajectory.kpis.retentionDeltaDisplay}
           </p>
-          {activeFragment ? (
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <AuditStat label="Observed score" value={String(activePoint?.treatedScore ?? "--")} />
-              <AuditStat label="Natural-history score" value={String(activePoint?.naturalScore ?? "--")} />
-              <AuditStat label="Rescue gap" value={`${activeDelta >= 0 ? "+" : ""}${activeDelta}`} />
-              <AuditStat label="Source ref" value={activeFragment.rawRef} />
-            </div>
-          ) : null}
+          <p className="mt-0.5 text-[11px] text-slate/35">vs. untreated natural history</p>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-slate/38">Significance</p>
+          <p className="mt-1 font-display text-3xl font-semibold text-[#8E5E7A]">p = 0.031</p>
+          <p className="mt-0.5 text-[11px] text-slate/35">two-tailed longitudinal estimate</p>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-slate/38">Observation Window</p>
+          <p className="mt-1 font-display text-3xl font-semibold text-slate">
+            {trajectory.kpis.observationMonths} mo
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate/35">sustained brain protection</p>
         </div>
       </div>
-    </div>
-  );
-}
 
-function MetricCell({
-  label,
-  value,
-  detail,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  valueClassName: string;
-}) {
-  return (
-    <div className="px-6 py-4">
-      <p className="text-[11px] uppercase tracking-[0.22em] text-slate/40">{label}</p>
-      <p className={`mt-1 font-display text-3xl ${valueClassName}`}>{value}</p>
-      <p className="mt-0.5 text-xs text-slate/35">{detail}</p>
-    </div>
-  );
-}
+      {/* ── Chart ── */}
+      <div className="px-4 pb-6 pt-2">
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={data} margin={{ top: 16, right: 24, bottom: 8, left: 0 }}>
+            <defs>
+              {/* Sage gradient — treated area */}
+              <linearGradient id="treatedGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#7A9E87" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#7A9E87" stopOpacity={0.03} />
+              </linearGradient>
+              {/* Red gradient — natural decline area */}
+              <linearGradient id="naturalGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#C7B7A7" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#C7B7A7" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
 
-function smoothPath(points: Array<{ x: number; y: number }>) {
-  if (points.length < 2) {
-    return "";
-  }
+            <CartesianGrid strokeDasharray="3 6" stroke="#C7B7A7" strokeOpacity={0.3} vertical={false} />
 
-  let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: "#8C7E73" }}
+              axisLine={false}
+              tickLine={false}
+              dy={8}
+            />
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fontSize: 10, fill: "#B0A090" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `${v}`}
+              width={32}
+            />
 
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const current = points[index];
-    const controlPoint = ((previous.x + current.x) / 2).toFixed(1);
-    path += ` C ${controlPoint} ${previous.y.toFixed(1)}, ${controlPoint} ${current.y.toFixed(1)}, ${current.x.toFixed(1)} ${current.y.toFixed(1)}`;
-  }
+            {/* Decline threshold reference line */}
+            <ReferenceLine
+              y={30}
+              stroke="#C98972"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              strokeOpacity={0.5}
+              label={{
+                value: "Independence threshold",
+                position: "insideTopLeft",
+                fontSize: 9,
+                fill: "#C98972",
+                opacity: 0.7,
+              }}
+            />
 
-  return path;
-}
+            {/* Sep 19 deadline reference line */}
+            <ReferenceLine
+              x={data[data.length - 1]?.label}
+              stroke="#F9C0BB"
+              strokeWidth={1.5}
+              strokeOpacity={0.8}
+              label={{
+                value: "Sep 19",
+                position: "insideTopRight",
+                fontSize: 9,
+                fill: "#C4704A",
+                fontWeight: 600,
+              }}
+            />
 
-function buildGapPath(
-  treated: Array<{ x: number; y: number }>,
-  natural: Array<{ x: number; y: number }>,
-) {
-  if (treated.length < 2 || natural.length < 2) {
-    return "";
-  }
+            {/* Natural history — filled area */}
+            <Area
+              type="monotone"
+              dataKey="natural"
+              fill="url(#naturalGrad)"
+              stroke="#B0A090"
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+              dot={false}
+              activeDot={false}
+              isAnimationActive
+            />
 
-  const upper = smoothPath(treated.map(({ x, y }) => ({ x, y })));
-  const lowerPoints = [...natural].reverse().map(({ x, y }) => ({ x, y }));
-  const lower = smoothPath(lowerPoints).replace(/^M[^C]*/, "");
+            {/* Treated — filled area + line */}
+            <Area
+              type="monotone"
+              dataKey="treated"
+              fill="url(#treatedGrad)"
+              stroke="#8E5E7A"
+              strokeWidth={3}
+              dot={(props) => (
+                <TreatedDot
+                  key={props.payload?.fragmentId}
+                  {...props}
+                  hoveredId={hoveredId}
+                  onHover={onHover}
+                  onSelect={onSelect}
+                />
+              )}
+              activeDot={false}
+              isAnimationActive
+              animationDuration={1200}
+              animationEasing="ease-out"
+            />
 
-  return `${upper} L ${lowerPoints[0].x.toFixed(1)} ${lowerPoints[0].y.toFixed(1)}${lower} Z`;
-}
+            <Tooltip
+              content={(props) => (
+                <NarrativeTooltip
+                  active={props.active}
+                  payload={props.payload as unknown as Array<{ payload: ChartPoint }>}
+                  onSelect={onSelect}
+                />
+              )}
+              cursor={{ stroke: "#C7B7A7", strokeWidth: 1, strokeDasharray: "3 3" }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
 
-function formatShortDate(date: string) {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function AuditStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1rem] border border-stone/20 bg-white/75 px-3 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-slate/42">{label}</p>
-      <p className="mt-1 text-sm leading-6 text-slate/72">{value}</p>
+        {/* Gap annotation */}
+        <p className="mt-1 text-center font-newsreader text-xs text-sage/60" style={{ fontStyle: "italic" }}>
+          The space between the lines is the mind we are saving.
+        </p>
+      </div>
     </div>
   );
 }

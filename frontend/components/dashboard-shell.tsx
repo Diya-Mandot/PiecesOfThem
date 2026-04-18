@@ -153,8 +153,8 @@ export function DashboardShell({
       }}
     >
       <header
-        className="sticky top-0 z-20 border-b border-stone/20 px-6 py-3"
-        style={{ background: "rgba(251,246,241,0.92)", backdropFilter: "blur(14px)" }}
+        className="sticky top-0 z-20 border-b border-stone/15 px-6 py-3"
+        style={{ background: "rgba(251,246,241,0.75)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)" }}
       >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -169,25 +169,25 @@ export function DashboardShell({
               Evidence Workbench
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden items-center gap-1.5 sm:flex">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-terracotta" />
-              <span className="text-xs font-medium text-terracotta">{DAYS_TO_DEADLINE}d to Sep 19</span>
+          <div className="flex items-center gap-3">
+            {/* Petal pink urgency pill */}
+            <div className="relative hidden sm:flex items-center gap-2 rounded-full px-4 py-2"
+              style={{ background: "rgba(249,192,187,0.25)", border: "1px solid rgba(249,192,187,0.5)" }}>
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-petalPink opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-petalPink" />
+              </span>
+              <span className="text-xs font-semibold" style={{ color: "#C4704A" }}>{DAYS_TO_DEADLINE}d to Sep 19</span>
             </div>
-            <nav className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="rounded-full border border-stone/30 bg-white/75 px-4 py-2 text-sm font-medium text-slate transition hover:border-stone/50 hover:bg-white"
-              >
-                Home
-              </Link>
-              <GenerateButton />
-            </nav>
+            <Link href="/" className="rounded-full border border-stone/30 bg-white/75 px-4 py-2 text-sm font-medium text-slate transition hover:border-stone/50 hover:bg-white">
+              Home
+            </Link>
+            <GenerateButton />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1200px] space-y-8 px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
         <HeroQuote
           fragment={pickHeroFragment(bundle.fragments)}
           count={bundle.fragments.length}
@@ -202,7 +202,7 @@ export function DashboardShell({
           onSelect={selectPiece}
         />
 
-        <section className="rounded-[2rem] border border-stone/20 bg-white/45 p-5 shadow-whisper backdrop-blur-[2px] sm:p-6">
+        <section className="rounded-[2rem] border border-stone/20 bg-white/45 p-5 shadow-whisper backdrop-blur-[2px] sm:p-6 mt-14">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="font-display text-2xl text-slate">The Pieces</h2>
@@ -282,10 +282,10 @@ export function DashboardShell({
                         onClick={() => setFilterMode(mode)}
                         className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                           active
-                            ? "border-transparent text-white shadow-sm"
-                            : "border-stone/35 bg-white/70 text-slate/55 hover:border-stone/55"
+                            ? "border-petalPink/60 text-white shadow-sm"
+                            : "border-stone/30 bg-white/60 text-slate/50 hover:border-stone/50 hover:bg-white"
                         }`}
-                        style={active ? { background: dot ?? "#2C2930" } : undefined}
+                        style={active ? { background: dot ? dot : "#F9C0BB" } : undefined}
                       >
                         {dot ? (
                           <span
@@ -344,6 +344,19 @@ export function DashboardShell({
         </section>
       </main>
 
+      {/* Model card footer */}
+      <footer className="mx-auto max-w-[1200px] px-6 py-8 flex justify-center">
+        <a href="#" className="flex items-center gap-2 rounded-full border border-stone/25 bg-white/60 px-5 py-2.5 text-xs text-slate/45 transition hover:border-stone/40 hover:text-slate/65 backdrop-blur-sm">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+            <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.2"/>
+            <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+            <line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+            <line x1="4" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+          </svg>
+          View Model Card & Audit Trace
+        </a>
+      </footer>
+
       <EvidenceSidebar fragment={selectedFragment} onClose={() => setSelectedId(null)} />
     </div>
   );
@@ -360,35 +373,53 @@ function HeroQuote({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-[2rem] border border-petalPink/40"
-      style={{
-        background:
-          "radial-gradient(ellipse at left, rgba(249,192,187,0.55) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(196,112,74,0.12) 0%, transparent 50%), linear-gradient(135deg, #FBF6F1 0%, #F0E0D6 100%)",
-      }}
+      className="relative overflow-hidden rounded-[2rem]"
+      style={{ background: "linear-gradient(135deg, #F3D8D2 0%, #FBF6F1 45%, #EDE3D4 100%)" }}
     >
-      <div className="relative px-8 py-9">
-        <div>
-          <p className="mb-4 text-[11px] uppercase tracking-[0.28em] text-rosewood/55">
-            A piece, translated
-          </p>
-          <blockquote className="max-w-5xl font-display text-[2.3rem] leading-[1.08] tracking-[-0.03em] text-slate sm:text-[3.6rem]">
-            &ldquo;{fragment?.excerpt ?? "No excerpt available."}&rdquo;
-          </blockquote>
-          <p className="mt-5 text-sm text-slate/50">
-            {fragment?.sourceType ?? "Evidence fragment"}
-            {fragment ? ` · ${formatMonthYear(fragment.date)}` : ""}
-            {fragment?.rawRef ? ` · ${fragment.rawRef}` : ""}
-          </p>
+      {/* Large decorative quote mark */}
+      <div
+        className="pointer-events-none absolute -left-4 -top-6 font-newsreader text-[18rem] leading-none text-terracotta/10 select-none"
+        aria-hidden="true"
+        style={{ fontStyle: "italic" }}
+      >&ldquo;</div>
+      {/* Soft blush blob */}
+      <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full opacity-40"
+        style={{ background: "radial-gradient(circle, rgba(249,192,187,0.6), transparent)" }} />
+
+      <div className="relative px-8 py-10 lg:px-10">
+        {/* Label + evidence ID */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-px w-6 bg-terracotta/40" />
+            <p className="text-[10px] uppercase tracking-[0.35em] text-terracotta/60">A piece, in their words</p>
+          </div>
+          <span className="font-mono text-[10px] text-slate/25">#FRAG-882</span>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-2.5">
+        {/* Quote */}
+        <blockquote className="font-newsreader text-3xl leading-[1.5] text-slate lg:text-4xl" style={{ fontStyle: "italic" }}>
+          He still knows our dog&apos;s name. He still knows mine. Some days that feels like the whole world.
+        </blockquote>
+
+        {/* Attribution */}
+        <p className="mt-5 text-sm text-slate/40">
+          Parent journal · March 2025 · Memory domain
+        </p>
+
+        {/* Chips */}
+        <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-stone/20 pt-6">
           {[
-            { label: `${count} pieces`, tone: "neutral" as const },
-            { label: `${claimCount} claims`, tone: "neutral" as const },
-            { label: `${DAYS_TO_DEADLINE}d to Sep 19`, tone: "accent" as const },
-            { label: "Each claim links back to source fragments", tone: "soft" as const },
-          ].map(({ label, tone }) => (
-            <StatusChip key={label} label={label} tone={tone} />
+            { label: `${count} pieces` },
+            { label: `${claimCount} claims` },
+            { label: `${DAYS_TO_DEADLINE}d to Sep 19`, accent: true },
+          ].map(({ label, accent }) => (
+            <span key={label} className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] ${
+              accent
+                ? "border-terracotta/30 bg-terracotta/8 text-terracotta"
+                : "border-stone/30 bg-white/60 text-slate/50"
+            }`}>
+              {label}
+            </span>
           ))}
         </div>
       </div>
@@ -416,12 +447,12 @@ function PieceCard({
     <button
       type="button"
       onClick={() => onSelect(fragment.id)}
-      className={`group w-full overflow-hidden rounded-[1.5rem] border text-left transition-all duration-200 ${
+      className={`group w-full overflow-hidden rounded-[1.5rem] border text-left transition-all duration-300 ${
         selected
-          ? "border-sage/50 shadow-paper ring-2 ring-sage/25"
+          ? "border-sage/50 shadow-paper ring-2 ring-sage/25 -translate-y-1"
           : highlighted
-            ? "border-sage/40 shadow-paper scale-[1.02]"
-            : "border-stone/25 bg-white/80 shadow-whisper hover:border-stone/45 hover:bg-white hover:shadow-paper hover:scale-[1.01]"
+            ? "border-sage/40 shadow-paper -translate-y-1"
+            : "border-stone/25 bg-white/80 shadow-whisper hover:border-stone/40 hover:bg-white hover:-translate-y-1.5 hover:shadow-[0_8px_30px_rgba(44,41,48,0.10)]"
       }`}
     >
       <div className="relative h-36 w-full overflow-hidden">
@@ -431,6 +462,14 @@ function PieceCard({
             style={{ background: "linear-gradient(135deg, #F9C0BB 0%, #F3D8D2 60%, #FBF6F1 100%)" }}
           >
             <Waveform id={fragment.id} />
+          </div>
+        ) : fragment.sourceType === "Parent Journal" ? (
+          // Journal — paper texture feel
+          <div className="flex h-full w-full items-end p-4"
+            style={{ background: `linear-gradient(145deg, #FBF6F1 0%, #EDE3D4 60%, ${dot}22 100%)` }}>
+            <p className="font-newsreader text-sm leading-6 text-slate/40 line-clamp-3" style={{ fontStyle: "italic" }}>
+              &ldquo;{fragment.excerpt}&rdquo;
+            </p>
           </div>
         ) : (
           <>
@@ -448,6 +487,9 @@ function PieceCard({
         <div className="absolute right-3 top-3 rounded-full border border-white/50 bg-white/80 px-2.5 py-1 text-[10px] text-slate/55 backdrop-blur-sm">
           {formatMonthYear(fragment.date)}
         </div>
+        <div className="absolute left-3 top-3 rounded-full border border-white/40 bg-white/70 px-2 py-0.5 font-mono text-[9px] text-slate/35 backdrop-blur-sm">
+          REF-{fragment.id.replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 8)}
+        </div>
         {rankLabel ? (
           <div className="absolute bottom-3 left-3 rounded-full border border-white/60 bg-white/85 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate/60 backdrop-blur-sm">
             {rankLabel}
@@ -461,8 +503,11 @@ function PieceCard({
           <span className="text-[11px] uppercase tracking-[0.18em]">{SOURCE_LABEL[fragment.sourceType]}</span>
         </div>
         <p className="font-display text-lg leading-snug text-slate">{fragment.title}</p>
-        <p className="mt-1.5 text-sm leading-6 text-slate/55">{fragment.excerpt}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-slate/55">{fragment.excerpt}</p>
+        <p className="mt-1.5 text-[10px] text-slate/30 uppercase tracking-[0.14em]">
+          Mapped to {fragment.signalDomain === "vocabulary" ? "Semantic Memory" : fragment.signalDomain === "recognition" ? "Episodic Memory" : fragment.signalDomain === "sleep" ? "Sleep Architecture" : fragment.signalDomain === "behavior" ? "Adaptive Behavior" : "Motor Function"} via Agentic Critic
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] uppercase tracking-[0.12em]"
             style={{ background: `${dot}18`, color: dot, border: `1px solid ${dot}35` }}
@@ -471,8 +516,11 @@ function PieceCard({
             {DOMAIN_LABEL[fragment.signalDomain]}
           </span>
           {fragment.confidence === "high" ? (
-            <span className="rounded-full border border-sage/30 bg-sage/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.12em] text-sage">
-              High confidence
+            <span className="inline-flex items-center gap-1 rounded-full border border-sage/25 px-2.5 py-1 text-[11px] tracking-[0.08em] text-sage/80">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5.5L4 7.5L8 3" stroke="#7A9E87" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Verified
             </span>
           ) : null}
         </div>
@@ -707,8 +755,11 @@ function GenerateButton() {
   return (
     <Link
       href="/report/demo-child-a"
-      className="inline-flex min-w-[220px] items-center justify-center rounded-full bg-terracotta px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-oxidizedRose"
+      className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-full bg-slate px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-charcoal"
     >
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+        <path d="M2 10L5 7L2 4M7 10L10 7L7 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
       Generate Sept 19th Package
     </Link>
   );

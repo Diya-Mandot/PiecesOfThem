@@ -197,6 +197,40 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── PULL QUOTE ── */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(160deg, #2C2930 0%, #38333C 100%)" }}>
+        <div className="pointer-events-none absolute -right-32 top-0 h-[500px] w-[500px] rounded-full opacity-10"
+          style={{ background: "radial-gradient(circle, #F9C0BB, transparent)" }} />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-[300px] w-[300px] rounded-full opacity-[0.08]"
+          style={{ background: "radial-gradient(circle, #C4704A, transparent)" }} />
+
+        <div className="relative mx-auto max-w-4xl px-8 py-24 lg:px-16 lg:py-32">
+          <div className="mb-10 flex items-center gap-3">
+            <div className="h-px w-8 bg-petalPink/50" />
+            <p className="text-[10px] uppercase tracking-[0.35em] text-petalPink/70">A piece, in their words</p>
+          </div>
+
+          <blockquote className="space-y-6">
+            <p className="font-newsreader text-xl leading-[1.7] text-white/50 lg:text-2xl" style={{ fontStyle: "italic" }}>
+              &ldquo;On the drive home he asked for his favorite song by name from the back seat, clearly and without anyone setting it up. We both went quiet because we had not heard a spontaneous song request in about eight months.
+            </p>
+            <p className="font-newsreader text-2xl leading-[1.45] text-white lg:text-[2.5rem]" style={{ fontStyle: "italic" }}>
+              It was such a small sentence, but it felt enormous — because it meant the connection was still there: the song, the memory of it, and the language needed to ask for it.&rdquo;
+            </p>
+          </blockquote>
+
+          <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-white/10 pt-8">
+            <p className="text-sm text-white/35">— Caregiver transcript · August 2025</p>
+            <span className="rounded-full border border-petalPink/30 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-petalPink/60">
+              Speech domain
+            </span>
+            <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/25">
+              Confidence 91%
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* ── WHAT WE DO ── */}
       <section className="px-8 pb-24 pt-20 lg:px-16">
         <div className="mb-12">
