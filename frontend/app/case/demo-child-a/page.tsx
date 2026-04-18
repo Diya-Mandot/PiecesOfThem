@@ -1,14 +1,18 @@
-import { notFound } from "next/navigation";
-
+import { DataUnavailable } from "@/components/data-unavailable";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { getCaseBundle } from "@/lib/logic";
+import { getWorkbenchData } from "@/lib/api";
 
-export default function DemoCasePage() {
-  const bundle = getCaseBundle("demo-child-a");
+export default async function DemoCasePage() {
+  const workbench = await getWorkbenchData("demo-child-a");
 
-  if (!bundle) {
-    notFound();
+  if (!workbench) {
+    return (
+      <DataUnavailable
+        title="Demo case is not projected yet."
+        body="The backend route for the demo case is reachable, but it does not yet have the extracted datapoints needed to assemble fragments, claims, and trajectory data for the workbench."
+      />
+    );
   }
 
-  return <DashboardShell bundle={bundle} />;
+  return <DashboardShell bundle={workbench.bundle} trajectory={workbench.trajectory} />;
 }
