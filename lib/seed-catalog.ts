@@ -1,8 +1,9 @@
 // Keep data/seed-catalog.json in sync with this catalog for the local Python ingestion pipeline.
+import { officialSourceNotes, officialSourceSeeds } from "@/lib/official-source-seeds";
 import { publicSourcePipelineNotes, publicSourceSeeds } from "@/lib/public-source-seeds";
 import { trialParticipantSeedNotes, trialParticipantSeeds } from "@/lib/trial-participant-seeds";
 
-export type SeedCatalogKind = "public-source" | "trial-participant";
+export type SeedCatalogKind = "official-source" | "public-source" | "trial-participant";
 
 export type SeedCatalogRisk = "low" | "medium" | "high";
 
@@ -53,6 +54,34 @@ export type SeedCatalogRecord = {
 };
 
 export const seedCatalog: SeedCatalogRecord[] = [
+  ...officialSourceSeeds.map<SeedCatalogRecord>((seed) => ({
+    id: seed.id,
+    kind: "official-source",
+    label: seed.title,
+    sourceUrls: [seed.sourceUrl],
+    platform: seed.organization,
+    access: seed.access,
+    subjectLabel: null,
+    childAgeSignal: "unknown",
+    diseaseSubtype: "unknown",
+    trialProgram: null,
+    interventionClass: null,
+    sourceConfidence: "confirmed",
+    namedPublicly: false,
+    confirmedParticipation: false,
+    sourceType: seed.sourceType,
+    authorRole: "institution",
+    symptomDomains: deriveDomains(seed.focusAreas),
+    temporalSignal: "snapshot",
+    extractionValue: seed.extractionValue,
+    scrapeDifficulty: "low",
+    consentRisk: seed.risk,
+    comparisonUse: null,
+    evidenceSummary:
+      "Low-risk official or institutional public source suitable for regulatory framing, natural-history context, and trial-status extraction.",
+    outcomeSignals: seed.focusAreas,
+    notes: seed.notes,
+  })),
   ...publicSourceSeeds.map<SeedCatalogRecord>((seed) => ({
     id: seed.id,
     kind: "public-source",
@@ -113,6 +142,7 @@ export const seedCatalog: SeedCatalogRecord[] = [
 export const seedCatalogNotes = {
   intendedUse:
     "Single normalized ingestion schema for public discovery sources and trial-linked participant sources.",
+  officialSourceNotes: officialSourceNotes,
   publicSourceNotes: publicSourcePipelineNotes,
   trialParticipantNotes: trialParticipantSeedNotes,
 };
