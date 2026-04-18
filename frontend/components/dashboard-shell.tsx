@@ -523,6 +523,17 @@ function PieceCard({
               Verified
             </span>
           ) : null}
+          {fragment.id.includes("EXT") ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#C4704A]/30 bg-[#C4704A]/6 px-2.5 py-1 text-[11px] tracking-[0.08em] text-[#C4704A]/80">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#C4704A]/70" />
+              Real
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-stone/20 px-2.5 py-1 text-[11px] tracking-[0.08em] text-slate/30">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate/20" />
+              Test
+            </span>
+          )}
         </div>
       </div>
     </button>
