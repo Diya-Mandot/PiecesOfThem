@@ -8,6 +8,7 @@ from typing import Any
 
 from openai import OpenAI
 from pydantic import ValidationError
+from psycopg.types.json import Jsonb
 
 from .config import PipelineConfig
 from .db import connect
@@ -30,6 +31,43 @@ def _build_prompt(chunk_text: str) -> str:
 
 def _load_response_payload(output_text: str) -> dict[str, Any]:
     return json.loads(output_text)
+
+
+def _extract_output_text_from_response(client: OpenAI, *, model: str, prompt: str) -> str:
+    """Return text output from the available OpenAI API surface.
+
+    Newer SDKs expose `client.responses.create(...)`, while older compatible
+    builds in this environment expose `client.chat.completions.create(...)`.
+    """
+
+    if hasattr(client, "responses"):
+        response = client.responses.create(model=model, input=prompt)
+        output_text = getattr(response, "output_text", None)
+        if output_text:
+            return output_text
+        raise ValueError("OpenAI response did not include output_text")
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    if not response.choices:
+        raise ValueError("OpenAI chat completion did not include any choices")
+
+    message_content = response.choices[0].message.content
+    if isinstance(message_content, str) and message_content:
+        return message_content
+
+    if isinstance(message_content, list):
+        parts: list[str] = []
+        for item in message_content:
+            text_value = getattr(item, "text", None)
+            if text_value:
+                parts.append(text_value)
+        if parts:
+            return "\n".join(parts)
+
+    raise ValueError("OpenAI chat completion did not include text content")
 
 
 def _store_datapoint(
@@ -58,7 +96,7 @@ def _store_datapoint(
             datapoint.subject_label,
             datapoint.disease_subtype,
             datapoint.trial_program,
-            datapoint.value.model_dump(mode="json"),
+            Jsonb(datapoint.value.model_dump(mode="json")),
             datapoint.confidence,
             datapoint.evidence_quote,
             None,
@@ -166,7 +204,6 @@ def _rollback_before_failure_logging(connection: Any) -> None:
     try:
         connection.rollback()
     except Exception:
-        # If rollback itself fails, we still try the failure-path writes below.
         pass
 
 
@@ -242,13 +279,11 @@ def run_extraction(config: PipelineConfig) -> int:
                 raw_output: str | None = None
 
                 try:
-                    response = client.responses.create(
+                    raw_output = _extract_output_text_from_response(
+                        client,
                         model=config.openai_model,
-                        input=_build_prompt(chunk_text),
+                        prompt=_build_prompt(chunk_text),
                     )
-                    raw_output = response.output_text
-                    if not raw_output:
-                        raise ValueError("OpenAI response did not include output_text")
 
                     payload = _load_response_payload(raw_output)
                     result = ExtractionResponse.model_validate(payload)

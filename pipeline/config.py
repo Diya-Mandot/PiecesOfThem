@@ -30,7 +30,7 @@ def _env_int(name: str, default: str) -> int:
 def _load_environment() -> None:
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(override=True)
 
 
 def load_config() -> PipelineConfig:
