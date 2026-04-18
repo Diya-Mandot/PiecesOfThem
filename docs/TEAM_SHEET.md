@@ -45,10 +45,9 @@ Owned phases:
 - Phase 7: AI / RAG Enhancement
 
 Owned files:
-- `frontend/lib/types.ts`
 - `frontend/lib/view-types.ts`
-- `frontend/lib/data.ts`
-- `frontend/lib/logic.ts`
+- `shared/types.ts`
+- `shared/api.ts`
 
 Responsibilities:
 - schema definition
@@ -67,12 +66,14 @@ Owned phases:
 - Phase 9: Repo and Demo Packaging
 
 Owned files:
-- `frontend/app/api/cases/[caseId]/route.ts`
-- `frontend/app/api/fragments/route.ts`
-- `frontend/app/api/claims/route.ts`
-- `frontend/app/api/report/[caseId]/route.ts`
+- `backend/src/server.ts`
+- `backend/src/routes.ts`
+- `backend/src/service.ts`
+- `backend/src/projection-repository.ts`
+- `backend/src/ingestion/`
 - `frontend/app/layout.tsx`
 - `frontend/package.json`
+- `backend/package.json`
 - `README.md`
 
 Responsibilities:
@@ -87,14 +88,14 @@ Responsibilities:
 Before coding starts, all three people agree on:
 - the one-sentence product definition
 - the single demo path
-- the exact fields in `frontend/lib/types.ts` for `CaseRecord`, `EvidenceFragment`, and `Claim`
+- the exact fields in `shared/types.ts` for `CaseRecord`, `EvidenceFragment`, and `Claim`
 - what is explicitly out of scope
 
 No code changes happen during Phase 0.
 
 ## Freeze Rules
 
-- After Phase 1, `frontend/lib/types.ts` is frozen.
+- After Phase 1, `shared/types.ts` is frozen.
 - After Phase 2, the core data shape is frozen.
 - Frontend builds against the frozen shape.
 - Backend builds APIs against the frozen shape.
